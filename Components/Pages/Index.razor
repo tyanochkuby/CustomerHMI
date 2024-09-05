@@ -1,0 +1,94 @@
+﻿@using CustomersTable.Data
+@inject CustomerService service
+
+<PageTitle>Customers</PageTitle>
+@if (busy)
+{
+    <div class="alert alert-info">
+        Loading...
+    </div>
+}
+else
+{
+    @if (customerList.Any())
+    {
+        <MudPaper>
+            
+            <MudButton Color="Color.Primary" OnClick="ToggleEditMode">
+                @(isEditing ? "Save" : "Edit")
+            </MudButton>
+
+            @if (isEditing)
+            {
+                <MudButton Color="Color.Secondary" @onclick="CancelChanges">Cancel</MudButton>
+            }
+
+            <MudTable Items="customerList">
+                <HeaderContent>
+                    <MudTh>Name</MudTh>
+                    <MudTh>Age</MudTh>
+                    <!-- Add more headers as needed -->
+                </HeaderContent>
+                <RowTemplate>
+                    <!-- All fields will be editable if isEditing is true -->
+                    <EditableField T="string" Value="@context.FirstName" IsEditing="isEditing" />
+                    <EditableField T="int" Value="@context.Age" IsEditing="isEditing" />
+                    <!-- Add more EditableField components for other fields -->
+                </RowTemplate>
+            </MudTable>
+        </MudPaper>
+    }
+    else
+    {
+        <div class="alert alert-info">
+            No customers found
+        </div>
+    }
+}
+
+@code {
+    private bool busy;
+    private bool isEditing = false;
+    private List<Customer> customerList = new List<Customer>();
+    private List<Customer> originalCustomerList = new List<Customer>(); // To store original data before editing
+
+    protected override async Task OnInitializedAsync()
+    {
+        await RefreshAsync();
+    }
+
+    private async Task RefreshAsync()
+    {
+        busy = true;
+        customerList = (await service.GetCustomersAsync()).ToList();
+        busy = false;
+    }
+
+    private void TestClick()
+    {
+        Console.WriteLine("works");
+    }
+
+    private void ToggleEditMode()
+    {
+        Console.WriteLine("ToggleEditMode triggered!");
+        if (isEditing)
+        {
+            // Save logic here (if required), e.g., service.SaveCustomersAsync(customerList);
+            isEditing = false;
+        }
+        else
+        {
+            isEditing = true;
+        }
+    }
+
+    private void CancelChanges()
+    {
+        // Restore the original list by creating a deep copy
+
+
+        isEditing = false;
+    }
+}
+
