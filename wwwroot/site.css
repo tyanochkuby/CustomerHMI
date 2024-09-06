@@ -1,0 +1,15 @@
+﻿body {
+}
+
+
+.elevate-on-hover {
+    transition: transform 0.2s ease-in-out;
+    transform: translateY(-5px);
+    box-shadow: 0 4px rgba(0, 0, 0, 0.2);
+}
+
+.button-container {
+    display: flex;
+    justify-content: flex-start;
+    gap: 10px; /* Optional: Add some space between buttons */
+}

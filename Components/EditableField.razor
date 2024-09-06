@@ -1,0 +1,33 @@
+﻿<!-- EditableField.razor -->
+@typeparam T
+<MudTd Class="@TdClass" Style="height: 70px; flex-grow: 1; flex-basis: 150px;">
+    @if (IsEditing)
+    {
+        <MudTextField @bind-Value="Value" @bind-Value:event="oninput" ValueChanged="EventCallback.Factory.Create<T>(this, OnValueChanged)" />
+    }
+    else
+    {
+        @if(Value is DateTime d)
+        {
+            <MudText Class="pointer-events-none">@d.ToShortDateString()</MudText>
+        }
+        else
+        {
+            <MudText Class="pointer-events-none">@Value</MudText>
+        }
+    }
+</MudTd>
+
+@code {
+    [Parameter] public bool IsEditing { get; set; }
+    [Parameter] public T? Value { get; set; }
+    [Parameter] public EventCallback<T> ValueChanged { get; set; }
+    [Parameter] public bool IsHovered { get; set; }
+    [Parameter] public string TdClass { get; set; } 
+
+    private async Task OnValueChanged(T newValue)
+    {
+        Value = newValue;
+        await ValueChanged.InvokeAsync(newValue);
+    }
+}

@@ -51,6 +51,8 @@ namespace CustomersTable.Data
 
         public int Age { get; set; }
 
+        public bool Checked { get; set; }
+
         private int CalculateAge(DateTime birthDate)
         {
             var today = DateTime.Today;

@@ -1,0 +1,76 @@
+﻿@using CustomersTable.Data.Attributes
+@using MudBlazor
+@using CustomersTable.Data
+@inherits ComponentBase
+
+<MudDialog>
+    <DialogContent>
+
+        <MudForm @ref="form" @bind-IsValid="@isValid" Class="mx-5">
+
+            <MudTextField @bind-Value="newCustomer.FirstName" T="string" Validation="@(new PolishAlphabetAttribute())" Label="First Name" Required="true" />
+            <MudTextField @bind-Value="newCustomer.LastName" T="string" Validation="@(new PolishAlphabetAttribute())" Label="Last Name" Required="true" />
+            <MudTextField @bind-Value="newCustomer.StreetName" T="string" Validation="@(new PolishAlphanumericAttribute())" Label="Street Name" Required="true" />
+            <MudTextField @bind-Value="newCustomer.HouseNumber" T="string" Validation="@(new HouseNumberAttribute())" Label="House Number" Required="true" />
+            <MudTextField @bind-Value="newCustomer.AppartmentNumber" T="string" Validation="@(new AppartmentNumberAttribute())" Label="Appartment Number" />
+            <MudTextField @bind-Value="newCustomer.PostalCode" T="string" Validation="@(new PostalCodeAttribute())" Label="Postal Code" Required="true" />
+            <MudTextField @bind-Value="newCustomer.Town" T="string" Validation="@(new PolishAlphabetAttribute())" Label="Town" Required="true" />
+            <MudTextField @bind-Value="newCustomer.PhoneNumber" T="string" Validation="@(new PhoneNumberAttribute())" Label="Phone Number" Required="true" />
+
+            <MudDatePicker @bind-Date="birthDate" Mask="@(new DateMask("dd.MM.yyyy"))" Editable="true" Label="Date of Birth" Required="true" />
+
+            <MudGrid Spacing="3" Class="mt-3 mb-2" Justify="Justify.SpaceEvenly">
+                <MudItem>
+                    <MudButton DropShadow="true" Variant="Variant.Filled" Color="Color.Secondary" OnClick="CancelDialog">Cancel</MudButton>
+                </MudItem>
+                <MudItem>
+                    <MudButton Disabled="@(!isValid)" DropShadow="true" Variant="Variant.Filled" Color="Color.Primary" OnClick="SubmitForm">Create</MudButton>
+                </MudItem>
+            </MudGrid>
+        </MudForm>
+
+    </DialogContent>
+</MudDialog>
+
+@code {
+    [CascadingParameter] MudDialogInstance MudDialog { get; set; }
+    private bool isValid;
+    private MudForm form = new MudForm();
+    DateTime? birthDate;
+    private Customer newCustomer = new Customer()
+        {
+            Id = Guid.NewGuid(),
+            FirstName = string.Empty,
+            LastName = string.Empty,
+            StreetName = string.Empty,
+            HouseNumber = string.Empty,
+            AppartmentNumber = string.Empty,
+            PostalCode = string.Empty,
+            Town = string.Empty,
+            PhoneNumber = string.Empty,
+            BirthDate = DateTime.Now,
+            Age=0
+        };
+
+    private async Task SubmitForm()
+    {
+        if (form.IsValid)
+        {
+            if (birthDate.HasValue)
+            {
+                newCustomer.BirthDate = birthDate.Value;
+            }
+            MudDialog.Close(DialogResult.Ok(newCustomer));
+        }
+    }
+
+    private void CancelDialog()
+    {
+        MudDialog.Cancel();
+    }
+
+    private void OnInvalidSubmit()
+    {
+        form.Validate(); // Trigger validation to show error messages
+    }
+}

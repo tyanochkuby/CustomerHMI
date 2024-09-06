@@ -27,10 +27,14 @@ else
 
                     @if (isEditing)
                     {
+                        <MudButton Class="mt-3 ml-2 mr-2" Variant="Variant.Filled" Color="Color.Error" Disabled="@(!customerList.Any(c => c.Checked))" @onclick="DeleteSelected">Delete</MudButton>
                         <MudButton Class="mt-3 ml-2 mr-2" Variant="Variant.Filled" Color="Color.Secondary" @onclick="CancelChanges">Cancel</MudButton>
                     }
                 </ToolBarContent>
                 <HeaderContent>
+                    
+                    <MudTh></MudTh>
+                    
                     <MudTh>Name</MudTh>
                     <MudTh>Last name</MudTh>
                     <MudTh>Street</MudTh>
@@ -48,16 +52,19 @@ else
                         bool isHovered = (currentlyHoveredElement != null && context.Id == currentlyHoveredElement.Id);
                     }
 
-                        <EditableField T="string" Value="@context.FirstName" IsEditing="isEditing" ValueChanged="@(newValue => context.FirstName = newValue)" TdClass="rounded-left" />
-                        <EditableField T="string" Value="@context.LastName" IsEditing="isEditing" ValueChanged="@(newValue => context.LastName = newValue)"  />
-                        <EditableField T="string" Value="@context.StreetName" IsEditing="isEditing" ValueChanged="@(newValue => context.StreetName = newValue)" />
-                        <EditableField T="string" Value="@context.HouseNumber" IsEditing="isEditing" ValueChanged="@(newValue => context.HouseNumber = newValue)" />
-                        <EditableField T="string" Value="@context.AppartmentNumber" IsEditing="isEditing" ValueChanged="@(newValue => context.AppartmentNumber = newValue)" />
-                        <EditableField T="string" Value="@context.PostalCode" IsEditing="isEditing" ValueChanged="@(newValue => context.PostalCode = newValue)" />
-                        <EditableField T="string" Value="@context.Town" IsEditing="isEditing" ValueChanged="@(newValue => context.Town = newValue)" />
-                        <EditableField T="string" Value="@context.PhoneNumber" IsEditing="isEditing" ValueChanged="@(newValue => context.PhoneNumber = newValue)" />
-                        <EditableField T="DateTime" Value="@context.BirthDate" IsEditing="isEditing" ValueChanged="@(newValue => context.BirthDate = newValue)" />
-                        <EditableField T="int" Value="@context.Age" IsEditing="isEditing" ValueChanged="@(newValue => context.Age = newValue)" TdClass="rounded-right" />
+
+                    <MudTd Style="height: 70px;" DataLabel="Enabled"><MudCheckBox Class="@(isEditing ? "visible" : "invisible")" T="bool" @bind-Value="@context.Checked"></MudCheckBox></MudTd>
+
+                    <EditableField T="string" Value="@context.FirstName" IsEditing="isEditing" ValueChanged="@(newValue => context.FirstName = newValue)" TdClass="rounded-left" />
+                    <EditableField T="string" Value="@context.LastName" IsEditing="isEditing" ValueChanged="@(newValue => context.LastName = newValue)"  />
+                    <EditableField T="string" Value="@context.StreetName" IsEditing="isEditing" ValueChanged="@(newValue => context.StreetName = newValue)" />
+                    <EditableField T="string" Value="@context.HouseNumber" IsEditing="isEditing" ValueChanged="@(newValue => context.HouseNumber = newValue)" />
+                    <EditableField T="string" Value="@context.AppartmentNumber" IsEditing="isEditing" ValueChanged="@(newValue => context.AppartmentNumber = newValue)" />
+                    <EditableField T="string" Value="@context.PostalCode" IsEditing="isEditing" ValueChanged="@(newValue => context.PostalCode = newValue)" />
+                    <EditableField T="string" Value="@context.Town" IsEditing="isEditing" ValueChanged="@(newValue => context.Town = newValue)" />
+                    <EditableField T="string" Value="@context.PhoneNumber" IsEditing="isEditing" ValueChanged="@(newValue => context.PhoneNumber = newValue)" />
+                    <EditableField T="DateTime" Value="@context.BirthDate" IsEditing="isEditing" ValueChanged="@(newValue => context.BirthDate = newValue)" />
+                    <EditableField T="int" Value="@context.Age" IsEditing="isEditing" ValueChanged="@(newValue => context.Age = newValue)" TdClass="rounded-right" />
                     
                 </RowTemplate>
             </MudTable>
@@ -80,6 +87,8 @@ else
     private bool busy;
     private bool isEditing = false;
     private List<Customer> customerList = new List<Customer>();
+    private List<Customer> newCustomers = new();
+    private List<Guid> customersToDelete = new();
     private List<Customer> originalCustomerList = new List<Customer>(); // To store original data before editing
     private Customer currentlyHoveredElement;
     string searchString;
@@ -93,6 +102,7 @@ else
     {
         busy = true;
         customerList = (await service.GetCustomersAsync()).ToList();
+        newCustomers.Clear();
         originalCustomerList = customerList.Select(c => new Customer
             {
                 Id = c.Id,
@@ -115,7 +125,10 @@ else
         Console.WriteLine("ToggleEditMode triggered!");
         if (isEditing)
         {
-            await service.SetCustomersAsync(customerList);
+            await service.DeleteCustomersAsync(customersToDelete);
+            customerList = customerList.Where(c => !c.Checked).ToList();
+            await service.UpdateCustomersAsync(customerList);
+            await service.CreateCustomersAsync(newCustomers);
             isEditing = false;
             await RefreshAsync();
         }
@@ -145,6 +158,12 @@ else
         isEditing = false;
     }
 
+    private void DeleteSelected()
+    {
+        customersToDelete.AddRange(customerList.Where(c => c.Checked).Select(c => c.Id));
+        customerList = customerList.Where(c => !c.Checked).ToList();
+    }
+
     private void OnRowMouseEnter(TableRowHoverEventArgs<Customer> eventArgs)
     {
         currentlyHoveredElement = eventArgs.Item;
@@ -164,9 +183,8 @@ else
         if (!result.Canceled)
         {
             Customer newCustomer = (Customer)result.Data;
+            newCustomers.Add(newCustomer);
             customerList.Add(newCustomer);
-            //await service.AddCustomerAsync(newCustomer);
-            //await RefreshAsync();
         }
     }
 

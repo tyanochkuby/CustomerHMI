@@ -1,4 +1,5 @@
 ﻿using CustomersTable.Data.Interfaces;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using static MudBlazor.Icons;
 
@@ -13,22 +14,24 @@ namespace CustomersTable.Data
             _httpClient = httpClient;
         }
 
-        public async Task<HttpResponseMessage> AddCustomerAsync(Customer customer)
+        public async Task CreateCustomersAsync(List<Customer> customers)
         {
-            var response = await _httpClient.PostAsJsonAsync("api/customers/add", customer);
-            return response;
+            var response = await _httpClient.PostAsJsonAsync("api/customers/create", customers);
+        }
+
+        public async Task DeleteCustomersAsync(IEnumerable<Guid> customerIds)
+        {
+            var response = await _httpClient.PostAsJsonAsync("api/customers/delete", customerIds);
         }
 
         public async Task<List<Customer>> GetCustomersAsync()
         {
-            return await _httpClient.GetFromJsonAsync<List<Customer>>("api/customers/getall");
+            return await _httpClient.GetFromJsonAsync<List<Customer>>("api/customers/get");
         }
 
-        public async Task<HttpResponseMessage> SetCustomersAsync(List<Customer> customers)
+        public async Task UpdateCustomersAsync(List<Customer> customers)
         {
-            var response = await _httpClient.PostAsJsonAsync("api/customers/setall", customers);
-            return response;
+            var response = await _httpClient.PostAsJsonAsync("api/customers/update", customers);
         }
-
     }
 }
