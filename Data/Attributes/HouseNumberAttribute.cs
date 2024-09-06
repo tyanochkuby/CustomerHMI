@@ -19,7 +19,7 @@ namespace CustomersTable.Data.Attributes
             }
 
             // Regex pattern to match up to 3 digits followed by exactly 1 English letter
-            var houseNumberPattern = @"^\d{1,3}[a-zA-Z]$";
+            var houseNumberPattern = @"^[0-9]{1,3}[a-zA-Z]?$";
             if (Regex.IsMatch(stringValue, houseNumberPattern))
             {
                 return ValidationResult.Success;

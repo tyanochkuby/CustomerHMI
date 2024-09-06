@@ -5,6 +5,21 @@ namespace CustomersTable.Data
 {
     public class Customer
     {
+        public Customer()
+        {
+            Id = Guid.NewGuid();
+            FirstName = string.Empty;
+            LastName = string.Empty;
+            StreetName = string.Empty;
+            HouseNumber = string.Empty;
+            AppartmentNumber = string.Empty;
+            PostalCode = string.Empty;
+            Town = string.Empty;
+            PhoneNumber = string.Empty;
+            BirthDate = new DateTime();
+            Age = CalculateAge(BirthDate);
+        }
+
         [Key]
         public Guid Id { get; set; }
 
@@ -14,7 +29,7 @@ namespace CustomersTable.Data
         [PolishAlphabet]
         public required string LastName { get; set; }
 
-        [PolishAlphabet]
+        [PolishAlphanumeric]
         public required string StreetName { get; set; }
 
         [HouseNumber]
@@ -32,8 +47,21 @@ namespace CustomersTable.Data
         [PhoneNumber]
         public required string PhoneNumber { get; set; }
 
-        public DateOnly BirthDate { get; set; }
+        public required DateTime BirthDate { get; set; }
 
         public int Age { get; set; }
+
+        private int CalculateAge(DateTime birthDate)
+        {
+            var today = DateTime.Today;
+            int age = today.Year - birthDate.Year;
+
+            if (today < birthDate.AddYears(age))
+            {
+                age--;
+            }
+
+            return age;
+        }
     }
 }

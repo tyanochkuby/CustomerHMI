@@ -1,5 +1,6 @@
 using CustomersTable.Components;
 using CustomersTable.Data;
+using CustomersTable.Data.Interfaces;
 using Microsoft.EntityFrameworkCore;
 using MudBlazor.Services;
 
@@ -11,9 +12,8 @@ builder.Services.AddMudServices();
 // Add services to the container.
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
-builder.Services.AddScoped<CustomerService>();
-builder.Services.AddDbContext<CustomersDbContext>(options =>
-    options.UseSqlite(builder.Configuration.GetConnectionString("Customers")));
+builder.Services.AddScoped(sp => new HttpClient { BaseAddress = new Uri("https://localhost:5001/") });
+builder.Services.AddScoped<ICustomerService, CustomerService>();
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.

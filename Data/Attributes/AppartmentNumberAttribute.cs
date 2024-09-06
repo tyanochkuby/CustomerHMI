@@ -19,7 +19,7 @@ namespace CustomersTable.Data.Attributes
             }
 
             // Regex pattern to match alphanumeric characters, hyphens, and slashes
-            var appartmentNumberPattern = @"^\d{1,4}[a-zA-Z]$";
+            var appartmentNumberPattern = @"^[0-9]{1,4}[a-zA-Z]?$";
             if (Regex.IsMatch(stringValue, appartmentNumberPattern))
             {
                 return ValidationResult.Success;

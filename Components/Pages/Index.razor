@@ -1,5 +1,8 @@
 ﻿@using CustomersTable.Data
-@inject CustomerService service
+@using CustomersTable.Data.Interfaces
+@using CustomersTable.Components
+@inject ICustomerService service
+@inject IDialogService DialogService
 
 <PageTitle>Customers</PageTitle>
 @if (busy)
@@ -13,30 +16,57 @@ else
     @if (customerList.Any())
     {
         <MudPaper>
-            
-            <MudButton Color="Color.Primary" OnClick="ToggleEditMode">
-                @(isEditing ? "Save" : "Edit")
-            </MudButton>
+            <MudTable Hover="true" T="Customer" Items="customerList" OnRowMouseEnter="OnRowMouseEnter" Filter="new Func<Customer,bool>(FilterFunc)" OnRowMouseLeave="OnRowMouseLeave">
+                <ToolBarContent>
+                   
+                    <MudTextField @bind-Value="searchString" Placeholder="Search" Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.Search" IconSize="Size.Medium" Class="mt-0"></MudTextField>
+                    <MudSpacer />
+                    <MudButton Class="mt-3 mr-2" Variant="Variant.Filled" Color="Color.Primary" OnClick="ToggleEditMode">
+                        @(isEditing ? "Save" : "Edit")
+                    </MudButton>
 
-            @if (isEditing)
-            {
-                <MudButton Color="Color.Secondary" @onclick="CancelChanges">Cancel</MudButton>
-            }
-
-            <MudTable Items="customerList">
+                    @if (isEditing)
+                    {
+                        <MudButton Class="mt-3 ml-2 mr-2" Variant="Variant.Filled" Color="Color.Secondary" @onclick="CancelChanges">Cancel</MudButton>
+                    }
+                </ToolBarContent>
                 <HeaderContent>
                     <MudTh>Name</MudTh>
+                    <MudTh>Last name</MudTh>
+                    <MudTh>Street</MudTh>
+                    <MudTh>House #</MudTh>
+                    <MudTh>Appartment #</MudTh>
+                    <MudTh>Postal code</MudTh>
+                    <MudTh>Town</MudTh>
+                    <MudTh>Phone number</MudTh>
+                    <MudTh>Date of birth</MudTh>
                     <MudTh>Age</MudTh>
                     <!-- Add more headers as needed -->
                 </HeaderContent>
-                <RowTemplate>
-                    <!-- All fields will be editable if isEditing is true -->
-                    <EditableField T="string" Value="@context.FirstName" IsEditing="isEditing" />
-                    <EditableField T="int" Value="@context.Age" IsEditing="isEditing" />
-                    <!-- Add more EditableField components for other fields -->
+                <RowTemplate >
+                    @{
+                        bool isHovered = (currentlyHoveredElement != null && context.Id == currentlyHoveredElement.Id);
+                    }
+
+                        <EditableField T="string" Value="@context.FirstName" IsEditing="isEditing" ValueChanged="@(newValue => context.FirstName = newValue)" TdClass="rounded-left" />
+                        <EditableField T="string" Value="@context.LastName" IsEditing="isEditing" ValueChanged="@(newValue => context.LastName = newValue)"  />
+                        <EditableField T="string" Value="@context.StreetName" IsEditing="isEditing" ValueChanged="@(newValue => context.StreetName = newValue)" />
+                        <EditableField T="string" Value="@context.HouseNumber" IsEditing="isEditing" ValueChanged="@(newValue => context.HouseNumber = newValue)" />
+                        <EditableField T="string" Value="@context.AppartmentNumber" IsEditing="isEditing" ValueChanged="@(newValue => context.AppartmentNumber = newValue)" />
+                        <EditableField T="string" Value="@context.PostalCode" IsEditing="isEditing" ValueChanged="@(newValue => context.PostalCode = newValue)" />
+                        <EditableField T="string" Value="@context.Town" IsEditing="isEditing" ValueChanged="@(newValue => context.Town = newValue)" />
+                        <EditableField T="string" Value="@context.PhoneNumber" IsEditing="isEditing" ValueChanged="@(newValue => context.PhoneNumber = newValue)" />
+                        <EditableField T="DateTime" Value="@context.BirthDate" IsEditing="isEditing" ValueChanged="@(newValue => context.BirthDate = newValue)" />
+                        <EditableField T="int" Value="@context.Age" IsEditing="isEditing" ValueChanged="@(newValue => context.Age = newValue)" TdClass="rounded-right" />
+                    
                 </RowTemplate>
             </MudTable>
+            @if (isEditing)
+            {
+                <MudButton Class="mx-auto" Style="width: 100%" Color="Color.Primary" @onclick="OpenCreateCustomerDialog">New</MudButton>
+            }
         </MudPaper>
+
     }
     else
     {
@@ -51,6 +81,8 @@ else
     private bool isEditing = false;
     private List<Customer> customerList = new List<Customer>();
     private List<Customer> originalCustomerList = new List<Customer>(); // To store original data before editing
+    private Customer currentlyHoveredElement;
+    string searchString;
 
     protected override async Task OnInitializedAsync()
     {
@@ -61,21 +93,31 @@ else
     {
         busy = true;
         customerList = (await service.GetCustomersAsync()).ToList();
+        originalCustomerList = customerList.Select(c => new Customer
+            {
+                Id = c.Id,
+                FirstName = c.FirstName,
+                LastName = c.LastName,
+                StreetName = c.StreetName,
+                HouseNumber = c.HouseNumber,
+                AppartmentNumber = c.AppartmentNumber,
+                PostalCode = c.PostalCode,
+                Town = c.Town,
+                PhoneNumber = c.PhoneNumber,
+                BirthDate = c.BirthDate,
+                Age = c.Age
+            }).ToList();
         busy = false;
     }
 
-    private void TestClick()
-    {
-        Console.WriteLine("works");
-    }
-
-    private void ToggleEditMode()
+    private async Task ToggleEditMode()
     {
         Console.WriteLine("ToggleEditMode triggered!");
         if (isEditing)
         {
-            // Save logic here (if required), e.g., service.SaveCustomersAsync(customerList);
+            await service.SetCustomersAsync(customerList);
             isEditing = false;
+            await RefreshAsync();
         }
         else
         {
@@ -85,10 +127,60 @@ else
 
     private void CancelChanges()
     {
-        // Restore the original list by creating a deep copy
-
+        customerList = originalCustomerList.Select(c => new Customer
+            {
+                Id = c.Id,
+                FirstName = c.FirstName,
+                LastName = c.LastName,
+                StreetName = c.StreetName,
+                HouseNumber = c.HouseNumber,
+                AppartmentNumber = c.AppartmentNumber,
+                PostalCode = c.PostalCode,
+                Town = c.Town,
+                PhoneNumber = c.PhoneNumber,
+                BirthDate = c.BirthDate,
+                Age = c.Age
+            }).ToList();
 
         isEditing = false;
+    }
+
+    private void OnRowMouseEnter(TableRowHoverEventArgs<Customer> eventArgs)
+    {
+        currentlyHoveredElement = eventArgs.Item;
+    }
+    private void OnRowMouseLeave(TableRowHoverEventArgs<Customer> eventArgs)
+    {
+        currentlyHoveredElement = null;
+    }
+
+    private async Task OpenCreateCustomerDialog()
+    {
+        var options = new DialogOptions { CloseOnEscapeKey = true, MaxWidth = MaxWidth.ExtraLarge };
+
+        var dialog = DialogService.Show<NewCustomerDialog>("Create New Customer", options);
+        var result = await dialog.Result;
+
+        if (!result.Canceled)
+        {
+            Customer newCustomer = (Customer)result.Data;
+            customerList.Add(newCustomer);
+            //await service.AddCustomerAsync(newCustomer);
+            //await RefreshAsync();
+        }
+    }
+
+    private bool FilterFunc(Customer customer)
+    {
+        if (string.IsNullOrWhiteSpace(searchString))
+            return true;
+        if (customer.FirstName.Contains(searchString, StringComparison.OrdinalIgnoreCase))
+            return true;
+        if (customer.LastName.Contains(searchString, StringComparison.OrdinalIgnoreCase))
+            return true;
+        if ($"{customer.Town} {customer.StreetName}".Contains(searchString))
+            return true;
+        return false;
     }
 }
 
