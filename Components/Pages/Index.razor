@@ -1,4 +1,5 @@
 ﻿@using CustomersTable.Data
+@using CustomersTable.Data.Attributes
 @using CustomersTable.Data.Interfaces
 @using CustomersTable.Components
 @inject ICustomerService service
@@ -21,7 +22,7 @@ else
                    
                     <MudTextField @bind-Value="searchString" Placeholder="Search" Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.Search" IconSize="Size.Medium" Class="mt-0"></MudTextField>
                     <MudSpacer />
-                    <MudButton Class="mt-3 mr-2" Variant="Variant.Filled" Color="Color.Primary" OnClick="ToggleEditMode">
+                    <MudButton Class="mt-3 mr-2" Variant="Variant.Filled" Disabled="@(!isFormValid)" Color="Color.Primary" OnClick="ToggleEditMode">
                         @(isEditing ? "Save" : "Edit")
                     </MudButton>
 
@@ -35,37 +36,38 @@ else
                     
                     <MudTh></MudTh>
                     
-                    <MudTh>Name</MudTh>
-                    <MudTh>Last name</MudTh>
+                    <MudTh><MudTableSortLabel SortBy="new Func<Customer, object>(x=>x.FirstName)">Name</MudTableSortLabel></MudTh>
+                    <MudTh><MudTableSortLabel SortBy="new Func<Customer, object>(x=>x.LastName)">Last name</MudTableSortLabel></MudTh>
                     <MudTh>Street</MudTh>
                     <MudTh>House #</MudTh>
                     <MudTh>Appartment #</MudTh>
                     <MudTh>Postal code</MudTh>
-                    <MudTh>Town</MudTh>
+                    <MudTh><MudTableSortLabel SortBy="new Func<Customer, object>(x=>x.Town)">Town</MudTableSortLabel></MudTh>
                     <MudTh>Phone number</MudTh>
-                    <MudTh>Date of birth</MudTh>
-                    <MudTh>Age</MudTh>
+                    <MudTh><MudTableSortLabel SortBy="new Func<Customer, object>(x=>x.BirthDate)">Date of birth</MudTableSortLabel></MudTh>
+                    <MudTh><MudTableSortLabel SortBy="new Func<Customer, object>(x=>x.Age)">Age</MudTableSortLabel></MudTh>
                     <!-- Add more headers as needed -->
                 </HeaderContent>
-                <RowTemplate >
+                <RowTemplate>
                     @{
                         bool isHovered = (currentlyHoveredElement != null && context.Id == currentlyHoveredElement.Id);
                     }
 
-
                     <MudTd Style="height: 70px;" DataLabel="Enabled"><MudCheckBox Class="@(isEditing ? "visible" : "invisible")" T="bool" @bind-Value="@context.Checked"></MudCheckBox></MudTd>
 
-                    <EditableField T="string" Value="@context.FirstName" IsEditing="isEditing" ValueChanged="@(newValue => context.FirstName = newValue)" TdClass="rounded-left" />
-                    <EditableField T="string" Value="@context.LastName" IsEditing="isEditing" ValueChanged="@(newValue => context.LastName = newValue)"  />
-                    <EditableField T="string" Value="@context.StreetName" IsEditing="isEditing" ValueChanged="@(newValue => context.StreetName = newValue)" />
-                    <EditableField T="string" Value="@context.HouseNumber" IsEditing="isEditing" ValueChanged="@(newValue => context.HouseNumber = newValue)" />
-                    <EditableField T="string" Value="@context.AppartmentNumber" IsEditing="isEditing" ValueChanged="@(newValue => context.AppartmentNumber = newValue)" />
-                    <EditableField T="string" Value="@context.PostalCode" IsEditing="isEditing" ValueChanged="@(newValue => context.PostalCode = newValue)" />
-                    <EditableField T="string" Value="@context.Town" IsEditing="isEditing" ValueChanged="@(newValue => context.Town = newValue)" />
-                    <EditableField T="string" Value="@context.PhoneNumber" IsEditing="isEditing" ValueChanged="@(newValue => context.PhoneNumber = newValue)" />
-                    <EditableField T="DateTime" Value="@context.BirthDate" IsEditing="isEditing" ValueChanged="@(newValue => context.BirthDate = newValue)" />
-                    <EditableField T="int" Value="@context.Age" IsEditing="isEditing" ValueChanged="@(newValue => context.Age = newValue)" TdClass="rounded-right" />
-                    
+                    <EditableField T="string" Value="@context.FirstName" ValidationAttribute="@(new PolishAlphabetAttribute())" IsEditing="isEditing" ValueChanged="@(newValue => context.FirstName = newValue)" OnValidationChanged="UpdateValidationState" />
+                    <EditableField T="string" Value="@context.LastName" ValidationAttribute="@(new PolishAlphabetAttribute())" IsEditing="isEditing" ValueChanged="@(newValue => context.LastName = newValue)" OnValidationChanged="UpdateValidationState" />
+                    <EditableField T="string" Value="@context.StreetName" ValidationAttribute="@(new PolishAlphabetAttribute())" IsEditing="isEditing" ValueChanged="@(newValue => context.StreetName = newValue)" OnValidationChanged="UpdateValidationState" />
+                    <EditableField T="string" Value="@context.HouseNumber" ValidationAttribute="@(new HouseNumberAttribute())" IsEditing="isEditing" ValueChanged="@(newValue => context.HouseNumber = newValue)" OnValidationChanged="UpdateValidationState" />
+                    <EditableField T="string" Value="@context.AppartmentNumber" ValidationAttribute="@(new AppartmentNumberAttribute())" IsEditing="isEditing" ValueChanged="@(newValue => context.AppartmentNumber = newValue)" OnValidationChanged="UpdateValidationState" />
+                    <EditableField T="string" Value="@context.PostalCode" ValidationAttribute="@(new PostalCodeAttribute())" IsEditing="isEditing" ValueChanged="@(newValue => context.PostalCode = newValue)" OnValidationChanged="UpdateValidationState" />
+                    <EditableField T="string" Value="@context.Town" ValidationAttribute="@(new PolishAlphabetAttribute())" IsEditing="isEditing" ValueChanged="@(newValue => context.Town = newValue)" OnValidationChanged="UpdateValidationState" />
+                    <EditableField T="string" Value="@context.PhoneNumber" ValidationAttribute="@(new PhoneNumberAttribute())" IsEditing="isEditing" ValueChanged="@(newValue => context.PhoneNumber = newValue)" OnValidationChanged="UpdateValidationState" />
+                    <EditableField T="DateTime" Value="@context.BirthDate" IsEditing="isEditing" ValueChanged="@(newValue => {
+                                                                                                                                context.BirthDate = newValue;
+                                                                                                                                context.Age = Customer.CalculateAge(newValue);
+                                                                                                                            })" OnValidationChanged="UpdateValidationState" />
+                    <EditableField T="int" Value="@context.Age" IsEditing="isEditing" IsDisabled="true" ValueChanged="@(newValue => context.Age = newValue)" OnValidationChanged="UpdateValidationState" />
                 </RowTemplate>
             </MudTable>
             @if (isEditing)
@@ -85,6 +87,7 @@ else
 
 @code {
     private bool busy;
+    private bool isFormValid = true;
     private bool isEditing = false;
     private List<Customer> customerList = new List<Customer>();
     private List<Customer> newCustomers = new();
@@ -199,6 +202,10 @@ else
         if ($"{customer.Town} {customer.StreetName}".Contains(searchString))
             return true;
         return false;
+    }
+    private void UpdateValidationState(bool isValid)
+    {
+        isFormValid = customerList.All(c => c.IsValid);
     }
 }
 

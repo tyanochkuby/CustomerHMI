@@ -25,7 +25,7 @@ namespace CustomersTable.Data.Attributes
                 return ValidationResult.Success;
             }
 
-            return new ValidationResult("The field contains invalid characters. Only alphanumeric characters, hyphens, and slashes are allowed.");
+            return new ValidationResult("Only alphanumeric characters, hyphens, and slashes are allowed.");
         }
     }
 }

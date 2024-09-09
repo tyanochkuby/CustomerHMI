@@ -25,7 +25,7 @@ namespace CustomersTable.Data.Attributes
                 return ValidationResult.Success;
             }
 
-            return new ValidationResult("The field contains invalid characters. The house number must be up to 3 digits followed by exactly 1 English letter.");
+            return new ValidationResult("Invalid house number");
         }
     }
 }

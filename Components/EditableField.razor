@@ -1,13 +1,14 @@
-﻿<!-- EditableField.razor -->
+﻿@using System.ComponentModel.DataAnnotations
+<!-- EditableField.razor -->
 @typeparam T
-<MudTd Class="@TdClass" Style="height: 70px; flex-grow: 1; flex-basis: 150px;">
+<MudTd Style="height: 70px; flex-grow: 1; flex-basis: 150px;">
     @if (IsEditing)
     {
-        <MudTextField @bind-Value="Value" @bind-Value:event="oninput" ValueChanged="EventCallback.Factory.Create<T>(this, OnValueChanged)" />
+        <MudTextField @bind-Value="Value" T="T" Format="@(typeof(T) == typeof(DateTime) ? "dd.MM.yyyy" : "")" Disabled="@IsDisabled" @bind-Value:event="oninput" Validation="@ValidationAttribute" ValueChanged="EventCallback.Factory.Create<T>(this, OnValueChanged)" Immediate="true" OnBlur="ValidateField" />
     }
     else
     {
-        @if(Value is DateTime d)
+        @if (Value is DateTime d)
         {
             <MudText Class="pointer-events-none">@d.ToShortDateString()</MudText>
         }
@@ -23,11 +24,24 @@
     [Parameter] public T? Value { get; set; }
     [Parameter] public EventCallback<T> ValueChanged { get; set; }
     [Parameter] public bool IsHovered { get; set; }
-    [Parameter] public string TdClass { get; set; } 
+    [Parameter] public bool IsDisabled { get; set; }
+    [Parameter] public ValidationAttribute? ValidationAttribute { get; set; }
+    [Parameter] public EventCallback<bool> OnValidationChanged { get; set; }
+
+    private bool isValid = true;
 
     private async Task OnValueChanged(T newValue)
     {
         Value = newValue;
         await ValueChanged.InvokeAsync(newValue);
+        await ValidateField();
+    }
+
+    private async Task ValidateField()
+    {
+        var context = new ValidationContext(Value);
+        var results = new List<ValidationResult>();
+        isValid = Validator.TryValidateValue(Value, context, results, new[] { ValidationAttribute });
+        await OnValidationChanged.InvokeAsync(isValid);
     }
 }

@@ -22,7 +22,7 @@ namespace CustomersTable.Data.Attributes
                 return ValidationResult.Success;
             }
 
-            return new ValidationResult("The field contains invalid characters. Only Polish alphanumeric characters are allowed.");
+            return new ValidationResult("Only Polish alphanumeric characters are allowed.");
         }
     }
 }
