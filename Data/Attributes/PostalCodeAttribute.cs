@@ -24,7 +24,7 @@ namespace CustomersTable.Data.Attributes
                 return ValidationResult.Success;
             }
 
-            return new ValidationResult("The field contains invalid characters. The postal code must be in the format XX-XXX.");
+            return new ValidationResult("The postal code must be in the format XX-XXX.");
         }
     }
 }

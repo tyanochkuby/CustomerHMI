@@ -25,7 +25,7 @@ namespace CustomersTable.Data.Attributes
                 return ValidationResult.Success;
             }
 
-            return new ValidationResult("The field contains invalid characters. The phone number must be exactly 9 digits.");
+            return new ValidationResult("The phone number must be exactly 9 digits.");
         }
     }
 }

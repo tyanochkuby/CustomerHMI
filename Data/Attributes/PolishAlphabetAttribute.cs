@@ -19,13 +19,13 @@ namespace CustomersTable.Data.Attributes
             }
 
             // Regex pattern to match Polish characters
-            var polishPattern = @"^[a-zA-ZąćęłńóśźżĄĆĘŁŃÓŚŹŻ\s]*$";
+            var polishPattern = @"^[a-zA-ZąćęłńóśźżĄĆĘŁŃÓŚŹŻ\s]+$";
             if (Regex.IsMatch(stringValue, polishPattern))
             {
                 return ValidationResult.Success;
             }
 
-            return new ValidationResult("The field contains invalid characters. Only Polish characters are allowed.");
+            return new ValidationResult("Only Polish characters are allowed.");
         }
     }
 }

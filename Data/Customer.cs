@@ -1,24 +1,11 @@
 ﻿using CustomersTable.Data.Attributes;
 using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace CustomersTable.Data
 {
     public class Customer
     {
-        public Customer()
-        {
-            Id = Guid.NewGuid();
-            FirstName = string.Empty;
-            LastName = string.Empty;
-            StreetName = string.Empty;
-            HouseNumber = string.Empty;
-            AppartmentNumber = string.Empty;
-            PostalCode = string.Empty;
-            Town = string.Empty;
-            PhoneNumber = string.Empty;
-            BirthDate = new DateTime();
-            Age = CalculateAge(BirthDate);
-        }
 
         [Key]
         public Guid Id { get; set; }
@@ -51,9 +38,21 @@ namespace CustomersTable.Data
 
         public int Age { get; set; }
 
+        [NotMapped]
         public bool Checked { get; set; }
 
-        private int CalculateAge(DateTime birthDate)
+        [NotMapped] 
+        public bool IsValid => Validate();
+
+        private bool Validate()
+        {
+            var context = new ValidationContext(this);
+            var results = new List<ValidationResult>();
+            return Validator.TryValidateObject(this, context, results, true);
+        }
+
+
+        public static int CalculateAge(DateTime birthDate)
         {
             var today = DateTime.Today;
             int age = today.Year - birthDate.Year;
@@ -65,5 +64,6 @@ namespace CustomersTable.Data
 
             return age;
         }
+
     }
 }
