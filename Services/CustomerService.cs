@@ -1,9 +1,11 @@
-﻿using CustomersTable.Data.Interfaces;
+﻿using CustomersTable.Data;
+using CustomersTable.Data.Interfaces;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.JSInterop;
 using static MudBlazor.Icons;
 
-namespace CustomersTable.Data
+namespace CustomersTable.Services
 {
     public class CustomerService : ICustomerService
     {
@@ -14,19 +16,19 @@ namespace CustomersTable.Data
             _httpClient = httpClient;
         }
 
-        public async Task CreateCustomersAsync(List<Customer> customers)
-        {
-            var response = await _httpClient.PostAsJsonAsync("api/customers/create", customers);
-        }
-
-        public async Task DeleteCustomersAsync(IEnumerable<Guid> customerIds)
+        public async Task DeleteCustomersAsync(IEnumerable<int> customerIds)
         {
             var response = await _httpClient.PostAsJsonAsync("api/customers/delete", customerIds);
         }
 
         public async Task<List<Customer>> GetCustomersAsync()
         {
-            return await _httpClient.GetFromJsonAsync<List<Customer>>("api/customers/get");
+            var customers = await _httpClient.GetFromJsonAsync<List<Customer>>("api/customers/get");
+            foreach(var customer in customers)
+            {
+                customer.Age = Customer.CalculateAge(customer.BirthDate);
+            }
+            return customers;
         }
 
         public async Task UpdateCustomersAsync(List<Customer> customers)

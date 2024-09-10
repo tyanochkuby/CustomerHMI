@@ -1,10 +1,10 @@
 ﻿@using System.ComponentModel.DataAnnotations
 <!-- EditableField.razor -->
 @typeparam T
-<MudTd Style="height: 70px; flex-grow: 1; flex-basis: 150px;">
+<MudTd @onmouseenter="OnHover" @onmouseleave="OnUnhover" Style="@TdStyle" >
     @if (IsEditing)
     {
-        <MudTextField @bind-Value="Value" T="T" Format="@(typeof(T) == typeof(DateTime) ? "dd.MM.yyyy" : "")" Disabled="@IsDisabled" @bind-Value:event="oninput" Validation="@ValidationAttribute" ValueChanged="EventCallback.Factory.Create<T>(this, OnValueChanged)" Immediate="true" OnBlur="ValidateField" />
+        <MudTextField @ref="textField" @onfocus="OnTextFieldFocused" @onfocusout="OnTextFieldUnfocused" @bind-Value="Value" T="T" Format="@(typeof(T) == typeof(DateTime) ? "dd.MM.yyyy" : "")" Disabled="@IsDisabled" @bind-Value:event="oninput" Validation="@ValidationAttribute" ValueChanged="EventCallback.Factory.Create<T>(this, OnValueChanged)" Immediate="true" @onblur="ValidateField" />
     }
     else
     {
@@ -23,12 +23,21 @@
     [Parameter] public bool IsEditing { get; set; }
     [Parameter] public T? Value { get; set; }
     [Parameter] public EventCallback<T> ValueChanged { get; set; }
-    [Parameter] public bool IsHovered { get; set; }
     [Parameter] public bool IsDisabled { get; set; }
     [Parameter] public ValidationAttribute? ValidationAttribute { get; set; }
     [Parameter] public EventCallback<bool> OnValidationChanged { get; set; }
+    [Parameter] public int flexBasis { get; set; } = 1;
 
+
+    private MudTextField<T> textField = new MudTextField<T>();
     private bool isValid = true;
+    private bool isHovered { get; set; }
+    private bool textFieldFocused { get; set; }
+
+    private string TdStyle
+    {
+        get => $"height: 70px; flex-grow: {((isHovered || textFieldFocused) && IsEditing && !IsDisabled ? "2" : "1")}; flex-basis: {flexBasis}px; transition: flex-grow 0.3s ease-in-out;";
+    }
 
     private async Task OnValueChanged(T newValue)
     {
@@ -41,7 +50,12 @@
     {
         var context = new ValidationContext(Value);
         var results = new List<ValidationResult>();
-        isValid = Validator.TryValidateValue(Value, context, results, new[] { ValidationAttribute });
+        isValid = ValidationAttribute != null ? Validator.TryValidateValue(Value, context, results, new[] { ValidationAttribute }) : true;
         await OnValidationChanged.InvokeAsync(isValid);
     }
+    private void OnHover(MouseEventArgs e) => isHovered = true;
+    private void OnUnhover(MouseEventArgs e) => isHovered = false;
+    private void OnTextFieldFocused(FocusEventArgs e) => textFieldFocused = true;
+    private void OnTextFieldUnfocused(FocusEventArgs e) => textFieldFocused = false;
+
 }

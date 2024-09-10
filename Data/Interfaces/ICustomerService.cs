@@ -8,8 +8,6 @@ namespace CustomersTable.Data.Interfaces
 
         public Task UpdateCustomersAsync(List<Customer> customers);
 
-        public Task CreateCustomersAsync(List<Customer> customers);
-
-        public Task DeleteCustomersAsync(IEnumerable<Guid> customerIds);
+        public Task DeleteCustomersAsync(IEnumerable<int> customerIds);
     }
 }

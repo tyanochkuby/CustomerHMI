@@ -2,17 +2,21 @@
 
 <MudThemeProvider Theme="@_theme" IsDarkMode="_isDarkMode" />
 <MudPopoverProvider />
-<MudDialogProvider />
+<MudDialogProvider 
+    FullWidth="true"
+    MaxWidth="MaxWidth.Medium"
+    />
 <MudSnackbarProvider />
 <MudLayout>
     <MudAppBar Elevation="1">
         <MudText Typo="Typo.h5" Class="ml-3">Customer table</MudText>
         <MudSpacer />
+        <MudIconButton Icon="@(DownloadCustomerListButtonIcon)" Disabled="@index.isEditing" Color="Color.Inherit" OnClick="@DownloadCustomerList"></MudIconButton>
         <MudIconButton Icon="@(DarkLightModeButtonIcon)" Color="Color.Inherit" OnClick="@DarkModeToggle" />
     </MudAppBar>
     
     <MudMainContent Class="mt-16 pa-4">
-        <Index />
+        <Index @ref="index"/>
     </MudMainContent>
 </MudLayout>
 
@@ -24,9 +28,12 @@
 </div>
 
 @code {
+
     private bool _drawerOpen = true;
     private bool _isDarkMode = true;
     private MudTheme? _theme = null;
+
+    private CustomersTable.Components.Pages.Index index = new();
 
     protected override void OnInitialized()
     {
@@ -49,6 +56,13 @@
     private void DarkModeToggle()
     {
         _isDarkMode = !_isDarkMode;
+    }
+
+
+
+    private void DownloadCustomerList()
+    {
+        index.DownloadCustomerList();
     }
 
     private readonly PaletteLight _lightPalette = new()
@@ -92,8 +106,14 @@
 
     public string DarkLightModeButtonIcon => _isDarkMode switch
     {
-        true => Icons.Material.Rounded.AutoMode,
-        false => Icons.Material.Outlined.DarkMode,
+        true => Icons.Material.Rounded.DarkMode,
+        false => Icons.Material.Outlined.LightMode,
+    };
+
+    public string DownloadCustomerListButtonIcon => _isDarkMode switch
+    {
+        true => Icons.Material.Rounded.Download,
+        false => Icons.Material.Outlined.Download,
     };
 }
 
