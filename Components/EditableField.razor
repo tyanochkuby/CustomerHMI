@@ -1,6 +1,7 @@
 ﻿@using System.ComponentModel.DataAnnotations
 <!-- EditableField.razor -->
 @typeparam T
+
 <MudTd @onmouseenter="OnHover" @onmouseleave="OnUnhover" Style="@TdStyle" >
     @if (IsEditing)
     {
@@ -19,7 +20,8 @@
     }
 </MudTd>
 
-@code {
+    @code {
+
     [Parameter] public bool IsEditing { get; set; }
     [Parameter] public T? Value { get; set; }
     [Parameter] public EventCallback<T> ValueChanged { get; set; }
@@ -31,7 +33,7 @@
 
     private MudTextField<T> textField = new MudTextField<T>();
     private bool isValid = true;
-    private bool isHovered { get; set; }
+    private bool isHovered;
     private bool textFieldFocused { get; set; }
 
     private string TdStyle

@@ -70,7 +70,7 @@ else
                     <EditableField T="string" flexBasis="150"   Value="@context.PhoneNumber"        ValidationAttribute="@(new PhoneNumberAttribute())" IsEditing="isEditing" ValueChanged="@(newValue => context.PhoneNumber = newValue)" OnValidationChanged="UpdateValidationState" />
                     <EditableField T="DateTime" flexBasis="100" Value="@context.BirthDate" IsEditing="isEditing" ValueChanged="@(newValue => { context.BirthDate = newValue; context.Age = Customer.CalculateAge(newValue);})" OnValidationChanged="UpdateValidationState" />
                     <EditableField T="int" flexBasis="50" Value="@context.Age" IsEditing="isEditing" IsDisabled="true" ValueChanged="@(newValue => context.Age = newValue)" OnValidationChanged="UpdateValidationState" />
-                    <MudTd Style="height: 70px; padding-top: 5px; flex-grow: 1; flex-basis: 80px;" DataLabel="Enabled"> <a href="tel:+48 @context.PhoneNumber"><MudIconButton  Icon="@TelephoneIcon"></MudIconButton> </a></MudTd>
+                    <MudTd Style="height: 70px; padding-top: 5px; flex-grow: 1; flex-basis: 80px;" DataLabel="Enabled"> <a href="tel:+48 @context.PhoneNumber"><MudIconButton Class="@(isEditing ? "invisible" : "visible")" Icon="@TelephoneIcon"></MudIconButton> </a></MudTd>
                 </MudTr>
             </RowTemplate>
         </MudTable>

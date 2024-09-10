@@ -2,6 +2,7 @@
 @using MudBlazor
 @using CustomersTable.Data
 @using System.ComponentModel.DataAnnotations
+@using System.Text.RegularExpressions
 @inherits ComponentBase
 
 <MudDialog>
@@ -12,7 +13,7 @@
             <MudTextField @bind-Value="newCustomer.FirstName" T="string" Validation="@(new PolishAlphabetAttribute())" Label="First Name" Required="true" />
             <MudTextField @bind-Value="newCustomer.LastName" T="string" Validation="@(new PolishAlphabetAttribute())" Label="Last Name" Required="true" />
 
-            <MudTextField @ref="postalCodeField" KeyDownPreventDefault="@_preventDefault" OnKeyDown="HandleKeyDown" @bind-Value="newCustomer.PostalCode" T="string" Validation="@(new PostalCodeAttribute())" Label="Postal Code" Required="true" />
+            <MudTextField @ref="postalCodeField" KeyDownPreventDefault="true" OnKeyDown="HandleKeyDown" @bind-Value="newCustomer.PostalCode" T="string" Validation="@(new PostalCodeAttribute())" Label="Postal Code" Required="true" />
 
             <MudTextField @ref="streetTextField" @bind-Value="newCustomer.StreetName" T="string" Validation="@(new PolishAlphanumericAttribute())" Label="Street Name" Required="true" />
             <MudTextField @bind-Value="newCustomer.HouseNumber" T="string" Validation="@(new HouseNumberAttribute())" Label="House Number" Required="true" />
@@ -83,10 +84,19 @@
 
     protected async Task HandleKeyDown(KeyboardEventArgs e)
     {
+        if (Regex.IsMatch(e.Key, @"^[0-9-]$") && newCustomer.PostalCode.Length < 6)
+        {
+            newCustomer.PostalCode += e.Key;
+            await postalCodeField.SetText(newCustomer.PostalCode);
+        }
+        if (e.Key == "Backspace" && newCustomer.PostalCode.Length > 0)
+        {
+            newCustomer.PostalCode = newCustomer.PostalCode.Substring(0, newCustomer.PostalCode.Length - 1);
+            await postalCodeField.SetText(newCustomer.PostalCode);
+        }
         if (e.Key == "Tab")
         {
             await Task.Delay(200);
-            await streetTextField.BlurAsync();
             var postalCodeValue = postalCodeField?.Value ?? string.Empty;
             var validationContext = new ValidationContext(newCustomer)
             {
@@ -95,11 +105,16 @@
 
             var results = new List<ValidationResult>();
             bool isValid = Validator.TryValidateProperty(postalCodeValue, validationContext, results);
-
+            if(!isValid && Regex.IsMatch(postalCodeValue, @"^[0-9]{5}$"))
+            {
+                postalCodeValue = postalCodeValue.Insert(2, "-");
+                newCustomer.PostalCode = postalCodeValue;
+                isValid = true;
+            }
             if (isValid)
             {
+                postalCodeField.ResetValidation();
                 await newCustomer.SetAddressByPostalCode(postalCodeValue);
-                streetTextField.ResetValidation();
                 await streetTextField.FocusAsync();
             }
         }
