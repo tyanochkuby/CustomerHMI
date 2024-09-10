@@ -6,7 +6,7 @@ namespace CustomersTable.Data.Attributes
     public class PolishAlphanumericAttribute : ValidationAttribute
     {
         private static readonly Regex PolishAlphanumericRegex = new Regex(
-            @"^[a-zA-Z0-9ąćęłńóśźżĄĆĘŁŃÓŚŹŻ]*$",
+            @"^[a-zA-Z0-9ąćęłńóśźżĄĆĘŁŃÓŚŹŻ\s.]+$",
             RegexOptions.Compiled | RegexOptions.CultureInvariant);
 
         protected override ValidationResult IsValid(object value, ValidationContext validationContext)

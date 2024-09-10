@@ -1,6 +1,8 @@
 ﻿using CustomersTable.Data.Attributes;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 
 namespace CustomersTable.Data
 {
@@ -8,7 +10,8 @@ namespace CustomersTable.Data
     {
 
         [Key]
-        public Guid Id { get; set; }
+        [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
+        public int Id { get; set; }
 
         [PolishAlphabet]
         public required string FirstName { get; set; }
@@ -36,12 +39,13 @@ namespace CustomersTable.Data
 
         public required DateTime BirthDate { get; set; }
 
+        [JsonIgnore]
         public int Age { get; set; }
 
-        [NotMapped]
+        [JsonIgnore]
         public bool Checked { get; set; }
 
-        [NotMapped] 
+        [JsonIgnore]
         public bool IsValid => Validate();
 
         private bool Validate()
@@ -63,6 +67,65 @@ namespace CustomersTable.Data
             }
 
             return age;
+        }
+
+        public async Task SetAddressByPostalCode(string postalCode)
+        {
+            var context = new ValidationContext(this);
+            var results = new List<ValidationResult>();
+            
+            var client = new HttpClient();
+            var response = await client.GetAsync($"https://kodpocztowy.intami.pl/api/{postalCode}");
+            if (response.IsSuccessStatusCode)
+            {
+                var content = await response.Content.ReadAsStringAsync();
+                using (JsonDocument document = JsonDocument.Parse(content))
+                {
+                    JsonElement root = document.RootElement;
+
+                    if (root.ValueKind == JsonValueKind.Array && root.GetArrayLength() > 0)
+                    {
+                        JsonElement firstObject = root[0];
+
+                        if (firstObject.TryGetProperty("miejscowosc", out JsonElement miejscowoscElement))
+                        {
+                            string miejscowosc = miejscowoscElement.GetString();
+                            if(!string.IsNullOrEmpty(miejscowosc))
+                            {
+                                Town = miejscowosc;
+                            }
+                        }
+                        if (firstObject.TryGetProperty("ulica", out JsonElement ulicaElement))
+                        {
+                            string ulica = ulicaElement.GetString();
+                            if (!string.IsNullOrEmpty(ulica))
+                            {
+                                StreetName = ulica;
+                            }
+                        }
+                    }
+                }
+            }
+            
+        }
+
+        public Customer Clone()
+        {
+            return new Customer
+            {
+                Id = this.Id,
+                FirstName = this.FirstName,
+                LastName = this.LastName,
+                StreetName = this.StreetName,
+                HouseNumber = this.HouseNumber,
+                AppartmentNumber = this.AppartmentNumber,
+                PostalCode = this.PostalCode,
+                Town = this.Town,
+                PhoneNumber = this.PhoneNumber,
+                BirthDate = this.BirthDate,
+                Age = this.Age,
+                Checked = this.Checked
+            };
         }
 
     }

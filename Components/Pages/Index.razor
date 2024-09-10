@@ -1,9 +1,17 @@
-﻿@using CustomersTable.Data
+﻿@page "/"
+
+@using CustomersTable.Data
 @using CustomersTable.Data.Attributes
 @using CustomersTable.Data.Interfaces
 @using CustomersTable.Components
-@inject ICustomerService service
+@using CustomersTable.Services
+@using System.Reflection
+@using System.Text
 @inject IDialogService DialogService
+@inject ICustomerService service
+@inject ICustomerManagementService customerManagementService
+@inject ICustomerDialogService customerDialogService
+@inject IJSRuntime JS
 
 <PageTitle>Customers</PageTitle>
 @if (busy)
@@ -14,87 +22,85 @@
 }
 else
 {
-    @if (customerList.Any())
-    {
-        <MudPaper>
-            <MudTable Hover="true" T="Customer" Items="customerList" OnRowMouseEnter="OnRowMouseEnter" Filter="new Func<Customer,bool>(FilterFunc)" OnRowMouseLeave="OnRowMouseLeave">
-                <ToolBarContent>
+    <MudPaper>
+        <MudTable Hover="true" T="Customer" Items="customerList" Filter="new Func<Customer,bool>(FilterFunc)">
+            <ToolBarContent>
                    
-                    <MudTextField @bind-Value="searchString" Placeholder="Search" Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.Search" IconSize="Size.Medium" Class="mt-0"></MudTextField>
-                    <MudSpacer />
-                    <MudButton Class="mt-3 mr-2" Variant="Variant.Filled" Disabled="@(!isFormValid)" Color="Color.Primary" OnClick="ToggleEditMode">
-                        @(isEditing ? "Save" : "Edit")
-                    </MudButton>
+                <MudTextField @bind-Value="searchString" Placeholder="Search" Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.Search" IconSize="Size.Medium" Class="mt-0"></MudTextField>
+                <MudSpacer />
+                <MudButton Class="mt-3 mr-2" Variant="Variant.Filled" Disabled="@(!isFormValid)" Color="Color.Primary" OnClick="ToggleEditMode">
+                    @(isEditing ? "Save" : "Edit")
+                </MudButton>
 
-                    @if (isEditing)
-                    {
-                        <MudButton Class="mt-3 ml-2 mr-2" Variant="Variant.Filled" Color="Color.Error" Disabled="@(!customerList.Any(c => c.Checked))" @onclick="DeleteSelected">Delete</MudButton>
-                        <MudButton Class="mt-3 ml-2 mr-2" Variant="Variant.Filled" Color="Color.Secondary" @onclick="CancelChanges">Cancel</MudButton>
-                    }
-                </ToolBarContent>
-                <HeaderContent>
+                @if (isEditing)
+                {
+                    <MudButton Class="mt-3 ml-2 mr-2" Variant="Variant.Filled" Color="Color.Error" Disabled="@(!customerList.Any(c => c.Checked))" @onclick="DeleteSelected">Delete</MudButton>
+                    <MudButton Class="mt-3 ml-2 mr-2" Variant="Variant.Filled" Color="Color.Secondary" @onclick="CancelChanges">Cancel</MudButton>
+                }
+            </ToolBarContent>
+            <HeaderContent>
+                <MudTr Style="display: flex;">
+                    <MudTh Style=" flex-grow: 1; flex-basis: 56px;"></MudTh>
+
+                    <MudTh Style=" flex-grow: 1; flex-basis: 150px;"><MudTableSortLabel SortBy="new Func<Customer, object>(x=>x.FirstName)">Name</MudTableSortLabel></MudTh>
+                    <MudTh Style=" flex-grow: 1; flex-basis: 150px;"><MudTableSortLabel SortBy="new Func<Customer, object>(x=>x.LastName)">Last name</MudTableSortLabel></MudTh>
+                    <MudTh Style=" flex-grow: 1; flex-basis: 250px;">Street</MudTh>
+                    <MudTh Style=" flex-grow: 1; flex-basis: 50px;">House #</MudTh>
+                    <MudTh Style=" flex-grow: 1; flex-basis: 50px;">Appartment</MudTh>
+                    <MudTh Style=" flex-grow: 1; flex-basis: 100px;">Postal code</MudTh>
+                    <MudTh Style=" flex-grow: 1; flex-basis: 150px;"><MudTableSortLabel SortBy="new Func<Customer, object>(x=>x.Town)">Town</MudTableSortLabel></MudTh>
+                    <MudTh Style=" flex-grow: 1; flex-basis: 150px;">Phone number</MudTh>
+                    <MudTh Style=" flex-grow: 1; flex-basis: 100px;"><MudTableSortLabel SortBy="new Func<Customer, object>(x=>x.BirthDate)">Date of birth</MudTableSortLabel></MudTh>
+                    <MudTh Style=" flex-grow: 1; flex-basis: 50px;"><MudTableSortLabel SortBy="new Func<Customer, object>(x=>x.Age)">Age</MudTableSortLabel></MudTh>
+                    <MudTh Style=" flex-grow: 1; flex-basis: 80px;"></MudTh>
+                </MudTr>
+            </HeaderContent>
+            <RowTemplate>
                     
-                    <MudTh></MudTh>
-                    
-                    <MudTh><MudTableSortLabel SortBy="new Func<Customer, object>(x=>x.FirstName)">Name</MudTableSortLabel></MudTh>
-                    <MudTh><MudTableSortLabel SortBy="new Func<Customer, object>(x=>x.LastName)">Last name</MudTableSortLabel></MudTh>
-                    <MudTh>Street</MudTh>
-                    <MudTh>House #</MudTh>
-                    <MudTh>Appartment #</MudTh>
-                    <MudTh>Postal code</MudTh>
-                    <MudTh><MudTableSortLabel SortBy="new Func<Customer, object>(x=>x.Town)">Town</MudTableSortLabel></MudTh>
-                    <MudTh>Phone number</MudTh>
-                    <MudTh><MudTableSortLabel SortBy="new Func<Customer, object>(x=>x.BirthDate)">Date of birth</MudTableSortLabel></MudTh>
-                    <MudTh><MudTableSortLabel SortBy="new Func<Customer, object>(x=>x.Age)">Age</MudTableSortLabel></MudTh>
-                    <!-- Add more headers as needed -->
-                </HeaderContent>
-                <RowTemplate>
-                    @{
-                        bool isHovered = (currentlyHoveredElement != null && context.Id == currentlyHoveredElement.Id);
-                    }
+                <MudTr Style="display: flex;">
+                    <MudTd Style="height: 70px; flex-grow: 1; flex-basis: 56px;" DataLabel="Enabled"><MudCheckBox Class="@(isEditing ? "visible" : "invisible")" T="bool" @bind-Value="@context.Checked"></MudCheckBox></MudTd>
 
-                    <MudTd Style="height: 70px;" DataLabel="Enabled"><MudCheckBox Class="@(isEditing ? "visible" : "invisible")" T="bool" @bind-Value="@context.Checked"></MudCheckBox></MudTd>
-
-                    <EditableField T="string" Value="@context.FirstName" ValidationAttribute="@(new PolishAlphabetAttribute())" IsEditing="isEditing" ValueChanged="@(newValue => context.FirstName = newValue)" OnValidationChanged="UpdateValidationState" />
-                    <EditableField T="string" Value="@context.LastName" ValidationAttribute="@(new PolishAlphabetAttribute())" IsEditing="isEditing" ValueChanged="@(newValue => context.LastName = newValue)" OnValidationChanged="UpdateValidationState" />
-                    <EditableField T="string" Value="@context.StreetName" ValidationAttribute="@(new PolishAlphabetAttribute())" IsEditing="isEditing" ValueChanged="@(newValue => context.StreetName = newValue)" OnValidationChanged="UpdateValidationState" />
-                    <EditableField T="string" Value="@context.HouseNumber" ValidationAttribute="@(new HouseNumberAttribute())" IsEditing="isEditing" ValueChanged="@(newValue => context.HouseNumber = newValue)" OnValidationChanged="UpdateValidationState" />
-                    <EditableField T="string" Value="@context.AppartmentNumber" ValidationAttribute="@(new AppartmentNumberAttribute())" IsEditing="isEditing" ValueChanged="@(newValue => context.AppartmentNumber = newValue)" OnValidationChanged="UpdateValidationState" />
-                    <EditableField T="string" Value="@context.PostalCode" ValidationAttribute="@(new PostalCodeAttribute())" IsEditing="isEditing" ValueChanged="@(newValue => context.PostalCode = newValue)" OnValidationChanged="UpdateValidationState" />
-                    <EditableField T="string" Value="@context.Town" ValidationAttribute="@(new PolishAlphabetAttribute())" IsEditing="isEditing" ValueChanged="@(newValue => context.Town = newValue)" OnValidationChanged="UpdateValidationState" />
-                    <EditableField T="string" Value="@context.PhoneNumber" ValidationAttribute="@(new PhoneNumberAttribute())" IsEditing="isEditing" ValueChanged="@(newValue => context.PhoneNumber = newValue)" OnValidationChanged="UpdateValidationState" />
-                    <EditableField T="DateTime" Value="@context.BirthDate" IsEditing="isEditing" ValueChanged="@(newValue => {
-                                                                                                                                context.BirthDate = newValue;
-                                                                                                                                context.Age = Customer.CalculateAge(newValue);
-                                                                                                                            })" OnValidationChanged="UpdateValidationState" />
-                    <EditableField T="int" Value="@context.Age" IsEditing="isEditing" IsDisabled="true" ValueChanged="@(newValue => context.Age = newValue)" OnValidationChanged="UpdateValidationState" />
-                </RowTemplate>
-            </MudTable>
-            @if (isEditing)
-            {
-                <MudButton Class="mx-auto" Style="width: 100%" Color="Color.Primary" @onclick="OpenCreateCustomerDialog">New</MudButton>
-            }
-        </MudPaper>
-
-    }
-    else
-    {
-        <div class="alert alert-info">
-            No customers found
-        </div>
-    }
+                    <EditableField T="string" flexBasis="150"   Value="@context.FirstName"          ValidationAttribute="@(new PolishAlphabetAttribute())" IsEditing="isEditing" ValueChanged="@(newValue => context.FirstName = newValue)" OnValidationChanged="UpdateValidationState" />
+                    <EditableField T="string" flexBasis="150"   Value="@context.LastName"           ValidationAttribute="@(new PolishAlphabetAttribute())" IsEditing="isEditing" ValueChanged="@(newValue => context.LastName = newValue)" OnValidationChanged="UpdateValidationState" />
+                    <EditableField T="string" flexBasis="250"   Value="@context.StreetName"         ValidationAttribute="@(new PolishAlphanumericAttribute())" IsEditing="isEditing" ValueChanged="@(newValue => context.StreetName = newValue)" OnValidationChanged="UpdateValidationState" />
+                    <EditableField T="string" flexBasis="50"    Value="@context.HouseNumber"        ValidationAttribute="@(new HouseNumberAttribute())" IsEditing="isEditing" ValueChanged="@(newValue => context.HouseNumber = newValue)" OnValidationChanged="UpdateValidationState" />
+                    <EditableField T="string" flexBasis="50"    Value="@context.AppartmentNumber"   ValidationAttribute="@(new AppartmentNumberAttribute())" IsEditing="isEditing" ValueChanged="@(newValue => context.AppartmentNumber = newValue)" OnValidationChanged="UpdateValidationState" />
+                    <EditableField T="string" flexBasis="100"   Value="@context.PostalCode"         ValidationAttribute="@(new PostalCodeAttribute())" IsEditing="isEditing" ValueChanged="@(newValue => context.PostalCode = newValue)" OnValidationChanged="UpdateValidationState" />
+                    <EditableField T="string" flexBasis="150"   Value="@context.Town"               ValidationAttribute="@(new PolishAlphabetAttribute())" IsEditing="isEditing" ValueChanged="@(newValue => context.Town = newValue)" OnValidationChanged="UpdateValidationState" />
+                    <EditableField T="string" flexBasis="150"   Value="@context.PhoneNumber"        ValidationAttribute="@(new PhoneNumberAttribute())" IsEditing="isEditing" ValueChanged="@(newValue => context.PhoneNumber = newValue)" OnValidationChanged="UpdateValidationState" />
+                    <EditableField T="DateTime" flexBasis="100" Value="@context.BirthDate" IsEditing="isEditing" ValueChanged="@(newValue => { context.BirthDate = newValue; context.Age = Customer.CalculateAge(newValue);})" OnValidationChanged="UpdateValidationState" />
+                    <EditableField T="int" flexBasis="50" Value="@context.Age" IsEditing="isEditing" IsDisabled="true" ValueChanged="@(newValue => context.Age = newValue)" OnValidationChanged="UpdateValidationState" />
+                    <MudTd Style="height: 70px; padding-top: 5px; flex-grow: 1; flex-basis: 80px;" DataLabel="Enabled"> <a href="tel:+48 @context.PhoneNumber"><MudIconButton  Icon="@TelephoneIcon"></MudIconButton> </a></MudTd>
+                </MudTr>
+            </RowTemplate>
+        </MudTable>
+        @if (isEditing)
+        {
+            <MudButton Class="mx-auto" Style="width: 100%" Color="Color.Primary" @onclick="OpenCreateCustomerDialog">New</MudButton>
+        }
+    </MudPaper>
 }
 
 @code {
+    [Parameter] public bool _isDarkMode { get; set; }
     private bool busy;
     private bool isFormValid = true;
-    private bool isEditing = false;
-    private List<Customer> customerList = new List<Customer>();
+    public bool isEditing
+    {
+        get;
+        private set;
+    }
+    private List<Customer> customerList = new();
     private List<Customer> newCustomers = new();
-    private List<Guid> customersToDelete = new();
-    private List<Customer> originalCustomerList = new List<Customer>(); // To store original data before editing
-    private Customer currentlyHoveredElement;
-    string searchString;
+    private List<int> customersToDelete = new();
+    private List<Customer> originalCustomerList = new();
+    string searchString = string.Empty;
+
+    public string TelephoneIcon => _isDarkMode switch
+    {
+        true => Icons.Material.Rounded.Phone,
+        false => Icons.Material.Outlined.Phone,
+    };
 
     protected override async Task OnInitializedAsync()
     {
@@ -104,34 +110,17 @@ else
     private async Task RefreshAsync()
     {
         busy = true;
-        customerList = (await service.GetCustomersAsync()).ToList();
+        customerList = (await customerManagementService.GetCustomersAsync()).ToList();
         newCustomers.Clear();
-        originalCustomerList = customerList.Select(c => new Customer
-            {
-                Id = c.Id,
-                FirstName = c.FirstName,
-                LastName = c.LastName,
-                StreetName = c.StreetName,
-                HouseNumber = c.HouseNumber,
-                AppartmentNumber = c.AppartmentNumber,
-                PostalCode = c.PostalCode,
-                Town = c.Town,
-                PhoneNumber = c.PhoneNumber,
-                BirthDate = c.BirthDate,
-                Age = c.Age
-            }).ToList();
+        originalCustomerList = customerList.Select(c => c.Clone()).ToList();
         busy = false;
     }
 
     private async Task ToggleEditMode()
     {
-        Console.WriteLine("ToggleEditMode triggered!");
         if (isEditing)
         {
-            await service.DeleteCustomersAsync(customersToDelete);
-            customerList = customerList.Where(c => !c.Checked).ToList();
-            await service.UpdateCustomersAsync(customerList);
-            await service.CreateCustomersAsync(newCustomers);
+            await customerManagementService.SaveChangesAsync(customerList, customersToDelete, newCustomers);
             isEditing = false;
             await RefreshAsync();
         }
@@ -143,21 +132,9 @@ else
 
     private void CancelChanges()
     {
-        customerList = originalCustomerList.Select(c => new Customer
-            {
-                Id = c.Id,
-                FirstName = c.FirstName,
-                LastName = c.LastName,
-                StreetName = c.StreetName,
-                HouseNumber = c.HouseNumber,
-                AppartmentNumber = c.AppartmentNumber,
-                PostalCode = c.PostalCode,
-                Town = c.Town,
-                PhoneNumber = c.PhoneNumber,
-                BirthDate = c.BirthDate,
-                Age = c.Age
-            }).ToList();
-
+        customersToDelete.Clear();
+        newCustomers.Clear();
+        customerList = originalCustomerList.Select(c => c.Clone()).ToList();
         isEditing = false;
     }
 
@@ -167,25 +144,11 @@ else
         customerList = customerList.Where(c => !c.Checked).ToList();
     }
 
-    private void OnRowMouseEnter(TableRowHoverEventArgs<Customer> eventArgs)
-    {
-        currentlyHoveredElement = eventArgs.Item;
-    }
-    private void OnRowMouseLeave(TableRowHoverEventArgs<Customer> eventArgs)
-    {
-        currentlyHoveredElement = null;
-    }
-
     private async Task OpenCreateCustomerDialog()
     {
-        var options = new DialogOptions { CloseOnEscapeKey = true, MaxWidth = MaxWidth.ExtraLarge };
-
-        var dialog = DialogService.Show<NewCustomerDialog>("Create New Customer", options);
-        var result = await dialog.Result;
-
-        if (!result.Canceled)
+        var newCustomer = await customerDialogService.OpenCreateCustomerDialogAsync();
+        if (newCustomer != null)
         {
-            Customer newCustomer = (Customer)result.Data;
             newCustomers.Add(newCustomer);
             customerList.Add(newCustomer);
         }
@@ -207,5 +170,29 @@ else
     {
         isFormValid = customerList.All(c => c.IsValid);
     }
+
+    public void DownloadCustomerList()
+    {
+        var csvBuilder = new StringBuilder();
+        csvBuilder.AppendLine("First Name, Last Name, Street Name, House Number, Apartment Number, Postal Code, Town, Phone Number, Date of Birth, Age");
+
+        foreach (var customer in customerList)
+        {
+            csvBuilder.AppendLine($"{customer.FirstName}, {customer.LastName}, {customer.StreetName}, {customer.HouseNumber}, {customer.AppartmentNumber}, {customer.PostalCode}, {customer.Town}, {customer.PhoneNumber}, {customer.BirthDate.ToShortDateString()}, {customer.Age}");
+        }
+        var csvData = csvBuilder.ToString();
+        JS.InvokeVoidAsync("downloadFileFromStream", "customers.csv", csvData);
+    }
 }
 
+<script>
+    function downloadFileFromStream(fileName, content) {
+        console.log(content);
+        const file = new Blob([content], { type: 'text/csv' });
+        const downloadLink = document.createElement('a');
+        downloadLink.href = URL.createObjectURL(file);
+        downloadLink.download = fileName;
+        downloadLink.click();
+        URL.revokeObjectURL(downloadLink.href);
+    }
+</script>
