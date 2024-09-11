@@ -68,9 +68,6 @@ namespace CustomersTable.Data
 
         public async Task SetAddressByPostalCode(string postalCode)
         {
-            var context = new ValidationContext(this);
-            var results = new List<ValidationResult>();
-            
             var client = new HttpClient();
             var response = await client.GetAsync($"https://kodpocztowy.intami.pl/api/{postalCode}");
             if (response.IsSuccessStatusCode)
@@ -80,21 +77,21 @@ namespace CustomersTable.Data
                 {
                     JsonElement root = document.RootElement;
 
-                    if (root.ValueKind == JsonValueKind.Array && root.GetArrayLength() > 0)
+                    if (root.ValueKind == JsonValueKind.Array && root.GetArrayLength() == 1)
                     {
                         JsonElement firstObject = root[0];
 
                         if (firstObject.TryGetProperty("miejscowosc", out JsonElement miejscowoscElement))
                         {
-                            string miejscowosc = miejscowoscElement.GetString();
-                            if(!string.IsNullOrEmpty(miejscowosc))
+                            string? miejscowosc = miejscowoscElement.GetString();
+                            if (!string.IsNullOrEmpty(miejscowosc))
                             {
                                 Town = miejscowosc;
                             }
                         }
                         if (firstObject.TryGetProperty("ulica", out JsonElement ulicaElement))
                         {
-                            string ulica = ulicaElement.GetString();
+                            string? ulica = ulicaElement.GetString();
                             if (!string.IsNullOrEmpty(ulica))
                             {
                                 StreetName = ulica;
@@ -103,8 +100,8 @@ namespace CustomersTable.Data
                     }
                 }
             }
-            
         }
+
 
         public Customer Clone()
         {

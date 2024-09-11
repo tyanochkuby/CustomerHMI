@@ -1,4 +1,11 @@
-﻿@inherits LayoutComponentBase
+﻿@using CsvHelper.Configuration
+@using CustomersTable.Data
+@inherits LayoutComponentBase
+@inject IJSRuntime JS
+@using CsvHelper
+@using System.Globalization
+@using CustomersTable.Data.Interfaces
+@inject ICustomerManagementService service
 
 <MudThemeProvider Theme="@_theme" IsDarkMode="_isDarkMode" />
 <MudPopoverProvider />
@@ -11,6 +18,8 @@
     <MudAppBar Elevation="1">
         <MudText Typo="Typo.h5" Class="ml-3">Customer table</MudText>
         <MudSpacer />
+        <input type="file" @onchange="OnFileSelected" style="display:none" />
+        <MudIconButton Icon="@(UploadCustomerListButtonIcon)" Disabled="@index.isEditing" Color="Color.Inherit" OnClick="OpenFileDialog">Upload Customers</MudIconButton>
         <MudIconButton Icon="@(DownloadCustomerListButtonIcon)" Disabled="@index.isEditing" Color="Color.Inherit" OnClick="@DownloadCustomerList"></MudIconButton>
         <MudIconButton Icon="@(DarkLightModeButtonIcon)" Color="Color.Inherit" OnClick="@DarkModeToggle" />
     </MudAppBar>
@@ -58,11 +67,34 @@
         _isDarkMode = !_isDarkMode;
     }
 
-
-
     private void DownloadCustomerList()
     {
         index.DownloadCustomerList();
+    }
+
+    private async Task OpenFileDialog()
+    {
+        await JS.InvokeVoidAsync("document.querySelector('input[type=file]').click()");
+    }
+
+    private async Task OnFileSelected(ChangeEventArgs e)
+    {
+        var file = e.Value as IBrowserFile;
+        if (file != null)
+        {
+            using (var stream = file.OpenReadStream())
+            using (var reader = new StreamReader(stream))
+            {
+                var csv = new CsvReader(reader, new CsvConfiguration(CultureInfo.InvariantCulture));
+
+                var records = csv.GetRecords<Customer>().ToList();
+
+                await service.SaveChangesAsync(customers: records, customersToDelete: null);
+
+                await JS.InvokeVoidAsync("reloadPage");
+
+            }
+        }
     }
 
     private readonly PaletteLight _lightPalette = new()
@@ -115,6 +147,18 @@
         true => Icons.Material.Rounded.Download,
         false => Icons.Material.Outlined.Download,
     };
+
+    public string UploadCustomerListButtonIcon => _isDarkMode switch
+    {
+        true => Icons.Material.Rounded.Upload,
+
+        false => Icons.Material.Outlined.Upload,
+
+    };
 }
 
-
+<script>
+    function reloadPage() {
+        location.reload();
+    }
+</script>

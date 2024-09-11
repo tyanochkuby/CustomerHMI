@@ -18,7 +18,8 @@ namespace CustomersTable.Services
 
         public async Task DeleteCustomersAsync(IEnumerable<int> customerIds)
         {
-            var response = await _httpClient.PostAsJsonAsync("api/customers/delete", customerIds);
+            var ids = string.Join(",", customerIds);
+            var response = await _httpClient.DeleteAsync($"api/customers/delete?customerIds={ids}");
         }
 
         public async Task<List<Customer>> GetCustomersAsync()
@@ -33,7 +34,7 @@ namespace CustomersTable.Services
 
         public async Task UpdateCustomersAsync(List<Customer> customers)
         {
-            var response = await _httpClient.PostAsJsonAsync("api/customers/update", customers);
+            var response = await _httpClient.PutAsJsonAsync("api/customers/update", customers);
         }
     }
 }

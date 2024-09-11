@@ -17,16 +17,14 @@ namespace CustomersTable.Services
             return (await _customerService.GetCustomersAsync()).ToList();
         }
 
-        public async Task SaveChangesAsync(List<Customer> customers, List<int> customersToDelete, List<Customer> newCustomers)
+        public async Task SaveChangesAsync(List<Customer> customers, List<int>? customersToDelete)
         {
-            // Update existing customers
             if (customers.Any())
             {
                 await _customerService.UpdateCustomersAsync(customers);
             }
 
-            // Delete customers
-            if (customersToDelete.Any())
+            if (customersToDelete is not null && customersToDelete.Any())
             {
                 await _customerService.DeleteCustomersAsync(customersToDelete);
             }

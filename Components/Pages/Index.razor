@@ -7,11 +7,14 @@
 @using CustomersTable.Services
 @using System.Reflection
 @using System.Text
+@using Microsoft.AspNetCore.SignalR.Client
 @inject IDialogService DialogService
 @inject ICustomerService service
 @inject ICustomerManagementService customerManagementService
 @inject ICustomerDialogService customerDialogService
+@inject NavigationManager NavigationManager
 @inject IJSRuntime JS
+@inject ISnackbar Snackbar
 
 <PageTitle>Customers</PageTitle>
 
@@ -58,16 +61,16 @@
                 {
                     <MudTd Style="height: 70px; flex-basis:56px" DataLabel="Enabled"></MudTd>
                 }
-                <EditableField OnEnter="ToggleEditMode" T="string" FlexBasis="150"   Value="@context.FirstName"          ValidationAttribute="@(new PolishAlphabetAttribute())" IsEditing="isEditing" ValueChanged="@(newValue => {context.FirstName = newValue; wasChanged = true;})" OnValidationChanged="UpdateValidationState" />
-                <EditableField OnEnter="ToggleEditMode" T="string" FlexBasis="150" Value="@context.LastName" ValidationAttribute="@(new PolishAlphabetAttribute())" IsEditing="isEditing" ValueChanged="@(newValue => {context.LastName = newValue; wasChanged = true;})" OnValidationChanged="UpdateValidationState" />
-                <EditableField OnEnter="ToggleEditMode" T="string" FlexBasis="250" Value="@context.StreetName" ValidationAttribute="@(new PolishAlphanumericAttribute())" IsEditing="isEditing" ValueChanged="@(newValue => {context.StreetName = newValue; wasChanged = true;})" OnValidationChanged="UpdateValidationState" />
-                <EditableField OnEnter="ToggleEditMode" T="string" FlexBasis="50" Value="@context.HouseNumber" ValidationAttribute="@(new HouseNumberAttribute())" IsEditing="isEditing" ValueChanged="@(newValue => {context.HouseNumber = newValue; wasChanged = true;})" OnValidationChanged="UpdateValidationState" />
-                <EditableField OnEnter="ToggleEditMode" T="string" FlexBasis="50"    Value="@context.AppartmentNumber"   ValidationAttribute="@(new AppartmentNumberAttribute())" IsEditing="isEditing" ValueChanged="@(newValue => {context.AppartmentNumber = newValue; wasChanged = true;})" OnValidationChanged="UpdateValidationState" />
-                <EditableField OnEnter="ToggleEditMode" T="string" FlexBasis="100" Value="@context.PostalCode" ValidationAttribute="@(new PostalCodeAttribute())" IsEditing="isEditing" ValueChanged="@(newValue => {context.PostalCode = newValue; wasChanged = true;})" OnValidationChanged="UpdateValidationState" />
-                <EditableField OnEnter="ToggleEditMode" T="string" FlexBasis="150" Value="@context.Town" ValidationAttribute="@(new PolishAlphabetAttribute())" IsEditing="isEditing" ValueChanged="@(newValue => {context.Town = newValue; wasChanged = true;})" OnValidationChanged="UpdateValidationState" />
-                <EditableField OnEnter="ToggleEditMode" T="string" FlexBasis="150" Value="@context.PhoneNumber" ValidationAttribute="@(new PhoneNumberAttribute())" IsEditing="isEditing" ValueChanged="@(newValue => {context.PhoneNumber = newValue; wasChanged = true;})" OnValidationChanged="UpdateValidationState" />
-                <EditableField OnEnter="ToggleEditMode" T="DateTime" FlexBasis="100" Value="@context.BirthDate" IsEditing="isEditing" ValueChanged="@(newValue => { context.BirthDate = newValue; context.Age = Customer.CalculateAge(newValue); wasChanged = true;})" OnValidationChanged="UpdateValidationState" />
-                <EditableField OnEnter="ToggleEditMode" T="int" FlexBasis="50" Value="@context.Age" IsEditing="isEditing" IsDisabled="true" ValueChanged="@(newValue => {context.Age = newValue; wasChanged = true;})" OnValidationChanged="UpdateValidationState" />
+                <EditableField OnEnter="ToggleEditMode" T="string" FlexBasis="150"   Value="@context.FirstName"          ValidationAttribute="@(new PolishAlphabetAttribute())" IsEditing="isEditing" ValueChanged="@(newValue => {context.FirstName = newValue; wasChanged = true; customersToUpdate.Add(context); })" OnValidationChanged="UpdateValidationState" />
+                <EditableField OnEnter="ToggleEditMode" T="string" FlexBasis="150" Value="@context.LastName" ValidationAttribute="@(new PolishAlphabetAttribute())" IsEditing="isEditing" ValueChanged="@(newValue => {context.LastName = newValue; wasChanged = true; customersToUpdate.Add(context); })" OnValidationChanged="UpdateValidationState" />
+                <EditableField OnEnter="ToggleEditMode" T="string" FlexBasis="250" Value="@context.StreetName" ValidationAttribute="@(new PolishAlphanumericAttribute())" IsEditing="isEditing" ValueChanged="@(newValue => {context.StreetName = newValue; wasChanged = true; customersToUpdate.Add(context); })" OnValidationChanged="UpdateValidationState" />
+                <EditableField OnEnter="ToggleEditMode" T="string" FlexBasis="50" Value="@context.HouseNumber" ValidationAttribute="@(new HouseNumberAttribute())" IsEditing="isEditing" ValueChanged="@(newValue => {context.HouseNumber = newValue; wasChanged = true; customersToUpdate.Add(context); })" OnValidationChanged="UpdateValidationState" />
+                <EditableField OnEnter="ToggleEditMode" T="string" FlexBasis="50"    Value="@context.AppartmentNumber"   ValidationAttribute="@(new AppartmentNumberAttribute())" IsEditing="isEditing" ValueChanged="@(newValue => {context.AppartmentNumber = newValue; wasChanged = true; customersToUpdate.Add(context); })" OnValidationChanged="UpdateValidationState" />
+                <EditableField OnEnter="ToggleEditMode" T="string" FlexBasis="100" Value="@context.PostalCode" ValidationAttribute="@(new PostalCodeAttribute())" IsEditing="isEditing" ValueChanged="@(newValue => {context.PostalCode = newValue; wasChanged = true; customersToUpdate.Add(context); })" OnValidationChanged="UpdateValidationState" />
+                <EditableField OnEnter="ToggleEditMode" T="string" FlexBasis="150" Value="@context.Town" ValidationAttribute="@(new PolishAlphabetAttribute())" IsEditing="isEditing" ValueChanged="@(newValue => {context.Town = newValue; wasChanged = true; customersToUpdate.Add(context); })" OnValidationChanged="UpdateValidationState" />
+                <EditableField OnEnter="ToggleEditMode" T="string" FlexBasis="150" Value="@context.PhoneNumber" ValidationAttribute="@(new PhoneNumberAttribute())" IsEditing="isEditing" ValueChanged="@(newValue => {context.PhoneNumber = newValue; wasChanged = true; customersToUpdate.Add(context); })" OnValidationChanged="UpdateValidationState" />
+                <EditableField OnEnter="ToggleEditMode" T="DateTime" FlexBasis="100" Value="@context.BirthDate" IsEditing="isEditing" ValueChanged="@(newValue => { context.BirthDate = newValue; context.Age = Customer.CalculateAge(newValue); wasChanged = true; customersToUpdate.Add(context); })" OnValidationChanged="UpdateValidationState" />
+                <EditableField OnEnter="ToggleEditMode" T="int" FlexBasis="50" Value="@context.Age" IsEditing="isEditing" IsDisabled="true" ValueChanged="@(newValue => {context.Age = newValue; wasChanged = true; customersToUpdate.Add(context); })" OnValidationChanged="UpdateValidationState" />
                 <MudTd Style="height: 70px; padding-top: 5px; flex-grow: 1; flex-basis: 80px;" DataLabel="Enabled"> <a href="tel:+48 @context.PhoneNumber"><MudIconButton Class="@(isEditing ? "invisible" : "visible")" Icon="@TelephoneIcon"></MudIconButton> </a></MudTd>
             </MudTr>
         </RowTemplate>
@@ -89,19 +92,14 @@
     [Parameter] public bool _isDarkMode { get; set; }
     private bool busy;
     private bool isFormValid = true;
-
     private bool wasChanged = false;
-    public bool isEditing
-    {
-        get;
-        private set;
-    }
+    public bool isEditing { get; private set; }
     private List<Customer> customerList = new();
-    private List<Customer> newCustomers = new();
+    private HashSet<Customer> customersToUpdate = new();
     private HashSet<Customer> selectedCustomers = new();
     private HashSet<Customer> customersToDelete = new();
+    private HubConnection hubConnection;
     string searchString = string.Empty;
-
     public string TelephoneIcon => _isDarkMode switch
     {
         true => Icons.Material.Rounded.Phone,
@@ -110,14 +108,39 @@
 
     protected override async Task OnInitializedAsync()
     {
+        // hubConnection = new HubConnectionBuilder()
+        // .WithUrl("https://localhost:5001/customerHub")
+        // .Build();
+
+        // hubConnection.On("ReceiveCustomerUpdate", async () =>
+        // {
+        //     if(isEditing)
+        //     {
+        //         Snackbar.Add("Someone has edited the table", Severity.Normal, config =>
+        //         {
+        //             config.Action = "Refresh";
+        //             config.ActionColor = Color.Primary;
+        //             config.Onclick = async snackbar => await RefreshAsync();
+        //         });
+        //     }
+        //     else
+        //     {
+        //         await RefreshAsync();
+        //         Snackbar.Add("List was updated", Severity.Normal, config => { config.ShowCloseIcon = true; });
+        //     }
+        // });
+
+        // await hubConnection.StartAsync();
         await RefreshAsync();
     }
 
     private async Task RefreshAsync()
     {
         busy = true;
+        selectedCustomers.Clear();
+        customersToUpdate.Clear();
+        customersToDelete.Clear();
         customerList = (await customerManagementService.GetCustomersAsync()).ToList();
-        newCustomers.Clear();
         wasChanged = false;
         busy = false;
     }
@@ -126,7 +149,7 @@
     {
         if (isEditing && isFormValid)
         {
-            await customerManagementService.SaveChangesAsync(customerList, customersToDelete.Select(c => c.Id).ToList(), newCustomers);
+            await customerManagementService.SaveChangesAsync(customersToUpdate.ToList(), customersToDelete.Select(c => c.Id).ToList());
             isEditing = false;
             await RefreshAsync();
         }
@@ -139,7 +162,6 @@
     private async Task CancelChanges()
     {
         customersToDelete.Clear();
-        newCustomers.Clear();
         isEditing = false;
 
         await RefreshAsync();
@@ -157,8 +179,8 @@
         var newCustomer = await customerDialogService.OpenCreateCustomerDialogAsync();
         if (newCustomer != null)
         {
-            newCustomers.Add(newCustomer);
             customerList.Add(newCustomer);
+            customersToUpdate.Add(newCustomer);
             wasChanged = true;
         }
     }
