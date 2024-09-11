@@ -14,77 +14,83 @@
 @inject IJSRuntime JS
 
 <PageTitle>Customers</PageTitle>
-@if (busy)
-{
-    <div class="alert alert-info">
-        Loading...
-    </div>
-}
-else
-{
-    <MudPaper>
-        <MudTable Hover="true" T="Customer" Items="customerList" Filter="new Func<Customer,bool>(FilterFunc)">
-            <ToolBarContent>
+
+<MudPaper>
+    <MudTable Loading="busy" MultiSelection="isEditing" SelectOnRowClick="false" @bind-SelectedItems="selectedCustomers" LoadingProgressColor="Color.Info" Breakpoint="Breakpoint.Sm" Hover="true" T="Customer" Items="customerList" Filter="new Func<Customer,bool>(FilterFunc)">
+        <ToolBarContent>
                    
-                <MudTextField @bind-Value="searchString" Placeholder="Search" Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.Search" IconSize="Size.Medium" Class="mt-0"></MudTextField>
-                <MudSpacer />
-                <MudButton Class="mt-3 mr-2" Variant="Variant.Filled" Disabled="@(!isFormValid)" Color="Color.Primary" OnClick="ToggleEditMode">
-                    @(isEditing ? "Save" : "Edit")
-                </MudButton>
-
-                @if (isEditing)
+            <MudTextField @bind-Value="searchString" Placeholder="Search" Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.Search" IconSize="Size.Medium" Class="mt-0"></MudTextField>
+            <MudSpacer />
+            @if(!isEditing)
+            {
+                <MudButton Class="mt-3 mr-2" Variant="Variant.Filled" Color="Color.Primary" OnClick="ToggleEditMode">Edit</MudButton>
+            }
+            else
+            {
+                <MudButton Class="mt-3 mr-2" Variant="Variant.Filled" Disabled="@(!isFormValid || !wasChanged)" Color="Color.Primary" OnClick="ToggleEditMode">Save</MudButton>
+                <MudButton Class="mt-3 ml-2 mr-2" Variant="Variant.Filled" Color="Color.Error" Disabled="!selectedCustomers.Any()" @onclick="DeleteSelected">Delete</MudButton>
+                <MudButton Class="mt-3 ml-2 mr-2" Variant="Variant.Filled" Color="Color.Secondary" @onclick="CancelChanges">@(wasChanged ? "Cancel" : "Exit")</MudButton>
+            }
+        </ToolBarContent>
+        <HeaderContent>
+            <MudTr Style="display: flex;">
+                @if (!isEditing)
                 {
-                    <MudButton Class="mt-3 ml-2 mr-2" Variant="Variant.Filled" Color="Color.Error" Disabled="@(!customerList.Any(c => c.Checked))" @onclick="DeleteSelected">Delete</MudButton>
-                    <MudButton Class="mt-3 ml-2 mr-2" Variant="Variant.Filled" Color="Color.Secondary" @onclick="CancelChanges">Cancel</MudButton>
+                    <MudTh Style="flex-basis: 56px;"></MudTh>
                 }
-            </ToolBarContent>
-            <HeaderContent>
-                <MudTr Style="display: flex;">
-                    <MudTh Style=" flex-grow: 1; flex-basis: 56px;"></MudTh>
-
-                    <MudTh Style=" flex-grow: 1; flex-basis: 150px;"><MudTableSortLabel SortBy="new Func<Customer, object>(x=>x.FirstName)">Name</MudTableSortLabel></MudTh>
-                    <MudTh Style=" flex-grow: 1; flex-basis: 150px;"><MudTableSortLabel SortBy="new Func<Customer, object>(x=>x.LastName)">Last name</MudTableSortLabel></MudTh>
-                    <MudTh Style=" flex-grow: 1; flex-basis: 250px;">Street</MudTh>
-                    <MudTh Style=" flex-grow: 1; flex-basis: 50px;">House #</MudTh>
-                    <MudTh Style=" flex-grow: 1; flex-basis: 50px;">Appartment</MudTh>
-                    <MudTh Style=" flex-grow: 1; flex-basis: 100px;">Postal code</MudTh>
-                    <MudTh Style=" flex-grow: 1; flex-basis: 150px;"><MudTableSortLabel SortBy="new Func<Customer, object>(x=>x.Town)">Town</MudTableSortLabel></MudTh>
-                    <MudTh Style=" flex-grow: 1; flex-basis: 150px;">Phone number</MudTh>
-                    <MudTh Style=" flex-grow: 1; flex-basis: 100px;"><MudTableSortLabel SortBy="new Func<Customer, object>(x=>x.BirthDate)">Date of birth</MudTableSortLabel></MudTh>
-                    <MudTh Style=" flex-grow: 1; flex-basis: 50px;"><MudTableSortLabel SortBy="new Func<Customer, object>(x=>x.Age)">Age</MudTableSortLabel></MudTh>
-                    <MudTh Style=" flex-grow: 1; flex-basis: 80px;"></MudTh>
-                </MudTr>
-            </HeaderContent>
-            <RowTemplate>
+                <MudTh Style=" flex-grow: 1; flex-basis: 150px;"><MudTableSortLabel SortBy="new Func<Customer, object>(x=>x.FirstName)">Name</MudTableSortLabel></MudTh>
+                <MudTh Style=" flex-grow: 1; flex-basis: 150px;"><MudTableSortLabel SortBy="new Func<Customer, object>(x=>x.LastName)">Last name</MudTableSortLabel></MudTh>
+                <MudTh Style=" flex-grow: 1; flex-basis: 250px;">Street</MudTh>
+                <MudTh Style=" flex-grow: 1; flex-basis: 50px;">House #</MudTh>
+                <MudTh Style=" flex-grow: 1; flex-basis: 50px;">Appartment</MudTh>
+                <MudTh Style=" flex-grow: 1; flex-basis: 100px;">Postal code</MudTh>
+                <MudTh Style=" flex-grow: 1; flex-basis: 150px;"><MudTableSortLabel SortBy="new Func<Customer, object>(x=>x.Town)">Town</MudTableSortLabel></MudTh>
+                <MudTh Style=" flex-grow: 1; flex-basis: 150px;">Phone number</MudTh>
+                <MudTh Style=" flex-grow: 1; flex-basis: 100px;"><MudTableSortLabel SortBy="new Func<Customer, object>(x=>x.BirthDate)">Date of birth</MudTableSortLabel></MudTh>
+                <MudTh Style=" flex-grow: 1; flex-basis: 50px;"><MudTableSortLabel SortBy="new Func<Customer, object>(x=>x.Age)">Age</MudTableSortLabel></MudTh>
+                <MudTh Style=" flex-grow: 1; flex-basis: 80px;"></MudTh>
+            </MudTr>
+        </HeaderContent>
+        <RowTemplate>
                     
-                <MudTr Style="display: flex;">
-                    <MudTd Style="height: 70px; flex-grow: 1; flex-basis: 56px;" DataLabel="Enabled"><MudCheckBox Class="@(isEditing ? "visible" : "invisible")" T="bool" @bind-Value="@context.Checked"></MudCheckBox></MudTd>
+            <MudTr Style="display: flex;">
+                @if (!isEditing)
+                {
+                    <MudTd Style="height: 70px; flex-basis:56px" DataLabel="Enabled"></MudTd>
+                }
+                <EditableField OnEnter="ToggleEditMode" T="string" FlexBasis="150"   Value="@context.FirstName"          ValidationAttribute="@(new PolishAlphabetAttribute())" IsEditing="isEditing" ValueChanged="@(newValue => {context.FirstName = newValue; wasChanged = true;})" OnValidationChanged="UpdateValidationState" />
+                <EditableField OnEnter="ToggleEditMode" T="string" FlexBasis="150" Value="@context.LastName" ValidationAttribute="@(new PolishAlphabetAttribute())" IsEditing="isEditing" ValueChanged="@(newValue => {context.LastName = newValue; wasChanged = true;})" OnValidationChanged="UpdateValidationState" />
+                <EditableField OnEnter="ToggleEditMode" T="string" FlexBasis="250" Value="@context.StreetName" ValidationAttribute="@(new PolishAlphanumericAttribute())" IsEditing="isEditing" ValueChanged="@(newValue => {context.StreetName = newValue; wasChanged = true;})" OnValidationChanged="UpdateValidationState" />
+                <EditableField OnEnter="ToggleEditMode" T="string" FlexBasis="50" Value="@context.HouseNumber" ValidationAttribute="@(new HouseNumberAttribute())" IsEditing="isEditing" ValueChanged="@(newValue => {context.HouseNumber = newValue; wasChanged = true;})" OnValidationChanged="UpdateValidationState" />
+                <EditableField OnEnter="ToggleEditMode" T="string" FlexBasis="50"    Value="@context.AppartmentNumber"   ValidationAttribute="@(new AppartmentNumberAttribute())" IsEditing="isEditing" ValueChanged="@(newValue => {context.AppartmentNumber = newValue; wasChanged = true;})" OnValidationChanged="UpdateValidationState" />
+                <EditableField OnEnter="ToggleEditMode" T="string" FlexBasis="100" Value="@context.PostalCode" ValidationAttribute="@(new PostalCodeAttribute())" IsEditing="isEditing" ValueChanged="@(newValue => {context.PostalCode = newValue; wasChanged = true;})" OnValidationChanged="UpdateValidationState" />
+                <EditableField OnEnter="ToggleEditMode" T="string" FlexBasis="150" Value="@context.Town" ValidationAttribute="@(new PolishAlphabetAttribute())" IsEditing="isEditing" ValueChanged="@(newValue => {context.Town = newValue; wasChanged = true;})" OnValidationChanged="UpdateValidationState" />
+                <EditableField OnEnter="ToggleEditMode" T="string" FlexBasis="150" Value="@context.PhoneNumber" ValidationAttribute="@(new PhoneNumberAttribute())" IsEditing="isEditing" ValueChanged="@(newValue => {context.PhoneNumber = newValue; wasChanged = true;})" OnValidationChanged="UpdateValidationState" />
+                <EditableField OnEnter="ToggleEditMode" T="DateTime" FlexBasis="100" Value="@context.BirthDate" IsEditing="isEditing" ValueChanged="@(newValue => { context.BirthDate = newValue; context.Age = Customer.CalculateAge(newValue); wasChanged = true;})" OnValidationChanged="UpdateValidationState" />
+                <EditableField OnEnter="ToggleEditMode" T="int" FlexBasis="50" Value="@context.Age" IsEditing="isEditing" IsDisabled="true" ValueChanged="@(newValue => {context.Age = newValue; wasChanged = true;})" OnValidationChanged="UpdateValidationState" />
+                <MudTd Style="height: 70px; padding-top: 5px; flex-grow: 1; flex-basis: 80px;" DataLabel="Enabled"> <a href="tel:+48 @context.PhoneNumber"><MudIconButton Class="@(isEditing ? "invisible" : "visible")" Icon="@TelephoneIcon"></MudIconButton> </a></MudTd>
+            </MudTr>
+        </RowTemplate>
+        <PagerContent>
+            <MudTablePager PageSizeOptions="new int[] {  int.MaxValue, 25, 50, 100 }"
+                           RowsPerPageString="Rows per page:"
+                           InfoFormat="{first_item}-{last_item} of {all_items}"
+                           AllItemsText="All"
+                           HorizontalAlignment="HorizontalAlignment.Right" />
+        </PagerContent>
+    </MudTable>
+    @if (isEditing)
+    {
+        <MudButton Class="mx-auto" Style="width: 100%" Color="Color.Primary" @onclick="OpenCreateCustomerDialog">New</MudButton>
+    }
+</MudPaper>
 
-                    <EditableField T="string" flexBasis="150"   Value="@context.FirstName"          ValidationAttribute="@(new PolishAlphabetAttribute())" IsEditing="isEditing" ValueChanged="@(newValue => context.FirstName = newValue)" OnValidationChanged="UpdateValidationState" />
-                    <EditableField T="string" flexBasis="150"   Value="@context.LastName"           ValidationAttribute="@(new PolishAlphabetAttribute())" IsEditing="isEditing" ValueChanged="@(newValue => context.LastName = newValue)" OnValidationChanged="UpdateValidationState" />
-                    <EditableField T="string" flexBasis="250"   Value="@context.StreetName"         ValidationAttribute="@(new PolishAlphanumericAttribute())" IsEditing="isEditing" ValueChanged="@(newValue => context.StreetName = newValue)" OnValidationChanged="UpdateValidationState" />
-                    <EditableField T="string" flexBasis="50"    Value="@context.HouseNumber"        ValidationAttribute="@(new HouseNumberAttribute())" IsEditing="isEditing" ValueChanged="@(newValue => context.HouseNumber = newValue)" OnValidationChanged="UpdateValidationState" />
-                    <EditableField T="string" flexBasis="50"    Value="@context.AppartmentNumber"   ValidationAttribute="@(new AppartmentNumberAttribute())" IsEditing="isEditing" ValueChanged="@(newValue => context.AppartmentNumber = newValue)" OnValidationChanged="UpdateValidationState" />
-                    <EditableField T="string" flexBasis="100"   Value="@context.PostalCode"         ValidationAttribute="@(new PostalCodeAttribute())" IsEditing="isEditing" ValueChanged="@(newValue => context.PostalCode = newValue)" OnValidationChanged="UpdateValidationState" />
-                    <EditableField T="string" flexBasis="150"   Value="@context.Town"               ValidationAttribute="@(new PolishAlphabetAttribute())" IsEditing="isEditing" ValueChanged="@(newValue => context.Town = newValue)" OnValidationChanged="UpdateValidationState" />
-                    <EditableField T="string" flexBasis="150"   Value="@context.PhoneNumber"        ValidationAttribute="@(new PhoneNumberAttribute())" IsEditing="isEditing" ValueChanged="@(newValue => context.PhoneNumber = newValue)" OnValidationChanged="UpdateValidationState" />
-                    <EditableField T="DateTime" flexBasis="100" Value="@context.BirthDate" IsEditing="isEditing" ValueChanged="@(newValue => { context.BirthDate = newValue; context.Age = Customer.CalculateAge(newValue);})" OnValidationChanged="UpdateValidationState" />
-                    <EditableField T="int" flexBasis="50" Value="@context.Age" IsEditing="isEditing" IsDisabled="true" ValueChanged="@(newValue => context.Age = newValue)" OnValidationChanged="UpdateValidationState" />
-                    <MudTd Style="height: 70px; padding-top: 5px; flex-grow: 1; flex-basis: 80px;" DataLabel="Enabled"> <a href="tel:+48 @context.PhoneNumber"><MudIconButton Class="@(isEditing ? "invisible" : "visible")" Icon="@TelephoneIcon"></MudIconButton> </a></MudTd>
-                </MudTr>
-            </RowTemplate>
-        </MudTable>
-        @if (isEditing)
-        {
-            <MudButton Class="mx-auto" Style="width: 100%" Color="Color.Primary" @onclick="OpenCreateCustomerDialog">New</MudButton>
-        }
-    </MudPaper>
-}
-
-@code {
+    @code {
     [Parameter] public bool _isDarkMode { get; set; }
     private bool busy;
     private bool isFormValid = true;
+
+    private bool wasChanged = false;
     public bool isEditing
     {
         get;
@@ -92,8 +98,8 @@ else
     }
     private List<Customer> customerList = new();
     private List<Customer> newCustomers = new();
-    private List<int> customersToDelete = new();
-    private List<Customer> originalCustomerList = new();
+    private HashSet<Customer> selectedCustomers = new();
+    private HashSet<Customer> customersToDelete = new();
     string searchString = string.Empty;
 
     public string TelephoneIcon => _isDarkMode switch
@@ -112,15 +118,15 @@ else
         busy = true;
         customerList = (await customerManagementService.GetCustomersAsync()).ToList();
         newCustomers.Clear();
-        originalCustomerList = customerList.Select(c => c.Clone()).ToList();
+        wasChanged = false;
         busy = false;
     }
 
     private async Task ToggleEditMode()
     {
-        if (isEditing)
+        if (isEditing && isFormValid)
         {
-            await customerManagementService.SaveChangesAsync(customerList, customersToDelete, newCustomers);
+            await customerManagementService.SaveChangesAsync(customerList, customersToDelete.Select(c => c.Id).ToList(), newCustomers);
             isEditing = false;
             await RefreshAsync();
         }
@@ -130,18 +136,20 @@ else
         }
     }
 
-    private void CancelChanges()
+    private async Task CancelChanges()
     {
         customersToDelete.Clear();
         newCustomers.Clear();
-        customerList = originalCustomerList.Select(c => c.Clone()).ToList();
         isEditing = false;
+
+        await RefreshAsync();
     }
 
     private void DeleteSelected()
     {
-        customersToDelete.AddRange(customerList.Where(c => c.Checked).Select(c => c.Id));
-        customerList = customerList.Where(c => !c.Checked).ToList();
+        wasChanged = true;
+        customersToDelete.UnionWith(selectedCustomers);
+        customerList = customerList.Where(c => !selectedCustomers.Contains(c)).ToList();
     }
 
     private async Task OpenCreateCustomerDialog()
@@ -151,6 +159,7 @@ else
         {
             newCustomers.Add(newCustomer);
             customerList.Add(newCustomer);
+            wasChanged = true;
         }
     }
 
@@ -162,7 +171,11 @@ else
             return true;
         if (customer.LastName.Contains(searchString, StringComparison.OrdinalIgnoreCase))
             return true;
-        if ($"{customer.Town} {customer.StreetName}".Contains(searchString))
+        if ($"{customer.Town} {customer.StreetName}, {customer.HouseNumber}".Contains(searchString))
+            return true;
+        if (customer.PostalCode.Contains(searchString))
+            return true;
+        if (customer.PhoneNumber.Contains(searchString))
             return true;
         return false;
     }

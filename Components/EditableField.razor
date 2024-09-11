@@ -5,7 +5,7 @@
 <MudTd @onmouseenter="OnHover" @onmouseleave="OnUnhover" Style="@TdStyle" >
     @if (IsEditing)
     {
-        <MudTextField @ref="textField" @onfocus="OnTextFieldFocused" @onfocusout="OnTextFieldUnfocused" @bind-Value="Value" T="T" Format="@(typeof(T) == typeof(DateTime) ? "dd.MM.yyyy" : "")" Disabled="@IsDisabled" @bind-Value:event="oninput" Validation="@ValidationAttribute" ValueChanged="EventCallback.Factory.Create<T>(this, OnValueChanged)" Immediate="true" @onblur="ValidateField" />
+        <MudTextField OnKeyDown="OnKeyDown" @ref="textField" @onfocus="OnTextFieldFocused" @onfocusout="OnTextFieldUnfocused" @bind-Value="Value" T="T" Format="@(typeof(T) == typeof(DateTime) ? "dd.MM.yyyy" : "")" Disabled="@IsDisabled" @bind-Value:event="oninput" Validation="@ValidationAttribute" ValueChanged="EventCallback.Factory.Create<T>(this, OnValueChanged)" Immediate="true" @onblur="ValidateField" />
     }
     else
     {
@@ -22,14 +22,16 @@
 
     @code {
 
+
+
     [Parameter] public bool IsEditing { get; set; }
     [Parameter] public T? Value { get; set; }
     [Parameter] public EventCallback<T> ValueChanged { get; set; }
     [Parameter] public bool IsDisabled { get; set; }
     [Parameter] public ValidationAttribute? ValidationAttribute { get; set; }
     [Parameter] public EventCallback<bool> OnValidationChanged { get; set; }
-    [Parameter] public int flexBasis { get; set; } = 1;
-
+    [Parameter] public int FlexBasis { get; set; } = 150;
+    [Parameter] public EventCallback OnEnter { get; set; }
 
     private MudTextField<T> textField = new MudTextField<T>();
     private bool isValid = true;
@@ -38,7 +40,7 @@
 
     private string TdStyle
     {
-        get => $"height: 70px; flex-grow: {((isHovered || textFieldFocused) && IsEditing && !IsDisabled ? "2" : "1")}; flex-basis: {flexBasis}px; transition: flex-grow 0.3s ease-in-out;";
+        get => $"height: 70px; flex-grow: {((isHovered || textFieldFocused) && IsEditing && !IsDisabled ? "2" : "1")}; flex-basis: {FlexBasis}px; transition: flex-grow 0.3s ease-in-out;";
     }
 
     private async Task OnValueChanged(T newValue)
@@ -60,4 +62,20 @@
     private void OnTextFieldFocused(FocusEventArgs e) => textFieldFocused = true;
     private void OnTextFieldUnfocused(FocusEventArgs e) => textFieldFocused = false;
 
+
+    private async Task OnKeyDown(KeyboardEventArgs e)
+    {
+        if(e.Key == "Enter")
+        {
+            var context = new ValidationContext(Value);
+            var results = new List<ValidationResult>();
+            isValid = Validator.TryValidateValue(Value, context, results, new[] { ValidationAttribute });
+
+            if(isValid)
+            {
+                await textField.BlurAsync();
+                await OnEnter.InvokeAsync();
+            }
+        }
+    }
 }

@@ -43,9 +43,6 @@ namespace CustomersTable.Data
         public int Age { get; set; }
 
         [JsonIgnore]
-        public bool Checked { get; set; }
-
-        [JsonIgnore]
         public bool IsValid => Validate();
 
         private bool Validate()
@@ -123,8 +120,7 @@ namespace CustomersTable.Data
                 Town = this.Town,
                 PhoneNumber = this.PhoneNumber,
                 BirthDate = this.BirthDate,
-                Age = this.Age,
-                Checked = this.Checked
+                Age = this.Age
             };
         }
 
