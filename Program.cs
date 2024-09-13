@@ -14,12 +14,15 @@ builder.Services.AddMudServices();
 // Add services to the container.
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
+
+var baseAddress = builder.Configuration.GetValue<string>("BaseAddress");
+
 builder.Services.AddSingleton(sp => new HttpClient(new HttpClientHandler
 {
     UseCookies = true
 })
 {
-    BaseAddress = new Uri("https://localhost:5001/")
+    BaseAddress = new Uri(baseAddress)
 });
 
 builder.Services.AddScoped<ICustomerService, CustomerService>();

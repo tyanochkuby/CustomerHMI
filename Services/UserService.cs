@@ -15,6 +15,8 @@
         public event EventHandler? OnIsLoggenInChanged;
 
         private bool _isLoggenIn;
+        
+        public bool isLightMode { get; private set; }
 
         public bool IsLoggenIn
         {
@@ -75,8 +77,9 @@
 
         public async Task<string> GetLoggedInUserIdAsync()
         {
-            var userId = await _httpClient.GetStringAsync("users/me?useCookies=true");
-            return userId;
+            var user = await _httpClient.GetFromJsonAsync<User>("users/me?useCookies=true");
+            isLightMode = user.lightMode;
+            return user.userId;
         }
 
         public async Task<bool> IsAuthenticatedAsync()
@@ -91,6 +94,25 @@
             {
                 return false;
             }
+        }
+
+        public async Task<bool> SetLightModeAsync(bool isLightMode)
+        {
+            var requestUri = $"setDefaultLightMode?lightMode={isLightMode.ToString().ToLower()}";
+            var response = await _httpClient.PutAsync(requestUri, null);
+
+            if (response.IsSuccessStatusCode)
+            {
+                return true;
+            }
+
+            return false;
+        }
+
+        private class User
+        {
+            public string userId { get; set; }
+            public bool lightMode { get; set; }
         }
     }
 

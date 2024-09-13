@@ -25,7 +25,7 @@
         <InputFile OnChange="OnFileSelected" style="display:none" />
         <div class="d-flex">
             <MudTooltip Text="Account" Disabled="isAccountPopupOpen">
-                <MudIconButton Style="@(_isLoggedIn ? "display:block" : "display:none")" Icon="@(AccountButtonIcon)" Color="Color.Inherit" OnClick="@ToggleAccountPopup" />
+                <MudIconButton Style="@(_isLoggedIn ? "" : "display:none")" Icon="@(AccountButtonIcon)" Color="Color.Inherit" OnClick="@ToggleAccountPopup" />
             </MudTooltip>
             <MudPopover  OverflowBehavior="OverflowBehavior.FlipNever" Open="@isAccountPopupOpen" AnchorOrigin="Origin.BottomCenter" TransformOrigin="Origin.TopCenter" Class="pa-4">
                 <MudButton Class="ma-3" Variant="Variant.Filled" Color="Color.Info" OnClick="ToLoginPage">Relogin</MudButton>
@@ -87,6 +87,10 @@
     private void HandleIsLoggenInChanged(object? sender, EventArgs e)
     {
         _isLoggedIn = userService.IsLoggenIn;
+        if(_isLoggedIn)
+        {
+            _isDarkMode = userService.isLightMode;
+        }
         StateHasChanged();
     }
 
@@ -95,9 +99,10 @@
         _drawerOpen = !_drawerOpen;
     }
 
-    private void DarkModeToggle()
+    private async Task DarkModeToggle()
     {
         _isDarkMode = !_isDarkMode;
+        await userService.SetLightModeAsync(_isDarkMode);
     }
 
     private void DownloadCustomerList()
@@ -133,6 +138,7 @@
         {
             try
             {
+                Snackbar.Add("Processing file, please wait...", Severity.Info);
                 using (var stream = file.OpenReadStream())
                 using (var memoryStream = new MemoryStream())
                 {
