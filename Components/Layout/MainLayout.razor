@@ -6,6 +6,10 @@
 @using System.Globalization
 @using CustomersTable.Data.Interfaces
 @inject ICustomerManagementService service
+@inject NavigationManager NavigationManager
+@inject IUserService userService
+@inject ISnackbar Snackbar
+@inject IComponentCommunicationService Link
 
 <MudThemeProvider Theme="@_theme" IsDarkMode="_isDarkMode" />
 <MudPopoverProvider />
@@ -18,14 +22,29 @@
     <MudAppBar Elevation="1">
         <MudText Typo="Typo.h5" Class="ml-3">Customer table</MudText>
         <MudSpacer />
-        <input type="file" @onchange="OnFileSelected" style="display:none" />
-        <MudIconButton Icon="@(UploadCustomerListButtonIcon)" Disabled="@index.isEditing" Color="Color.Inherit" OnClick="OpenFileDialog">Upload Customers</MudIconButton>
-        <MudIconButton Icon="@(DownloadCustomerListButtonIcon)" Disabled="@index.isEditing" Color="Color.Inherit" OnClick="@DownloadCustomerList"></MudIconButton>
-        <MudIconButton Icon="@(DarkLightModeButtonIcon)" Color="Color.Inherit" OnClick="@DarkModeToggle" />
+        <InputFile OnChange="OnFileSelected" style="display:none" />
+        <div class="d-flex">
+            <MudTooltip Text="Account" Disabled="isAccountPopupOpen">
+                <MudIconButton Style="@(_isLoggedIn ? "display:block" : "display:none")" Icon="@(AccountButtonIcon)" Color="Color.Inherit" OnClick="@ToggleAccountPopup" />
+            </MudTooltip>
+            <MudPopover  OverflowBehavior="OverflowBehavior.FlipNever" Open="@isAccountPopupOpen" AnchorOrigin="Origin.BottomCenter" TransformOrigin="Origin.TopCenter" Class="pa-4">
+                <MudButton Class="ma-3" Variant="Variant.Filled" Color="Color.Info" OnClick="ToLoginPage">Relogin</MudButton>
+            </MudPopover>
+            
+        </div>
+        <MudTooltip Text="Add customers from csv">
+            <MudIconButton @ref="uploadCustomersButton" Style="@(_isLoggedIn ? "" : "display:none")" Icon="@(UploadCustomerListButtonIcon)" Disabled="@_isEditing" Color="Color.Inherit" OnClick="OpenFileDialog">Upload Customers</MudIconButton>
+        </MudTooltip>
+        <MudTooltip Text="Download customers csv">
+            <MudIconButton Style="@(_isLoggedIn ? "" : "display:none")" Icon="@(DownloadCustomerListButtonIcon)" Disabled="@_isEditing" Color="Color.Inherit" OnClick="@DownloadCustomerList"></MudIconButton>
+        </MudTooltip>
+        <MudTooltip Text="@(_isDarkMode ? "Switch to light mode" : "Switch to dark mode")">
+            <MudIconButton Icon="@(DarkLightModeButtonIcon)" Color="Color.Inherit" OnClick="@DarkModeToggle" />
+        </MudTooltip>
     </MudAppBar>
     
     <MudMainContent Class="mt-16 pa-4">
-        <Index @ref="index"/>
+        @Body
     </MudMainContent>
 </MudLayout>
 
@@ -37,12 +56,13 @@
 </div>
 
 @code {
-
+    private bool _isLoggedIn;
     private bool _drawerOpen = true;
     private bool _isDarkMode = true;
     private MudTheme? _theme = null;
-
-    private CustomersTable.Components.Pages.Index index = new();
+    private bool isAccountPopupOpen;
+    private bool _isEditing;
+    private MudIconButton uploadCustomersButton = new();
 
     protected override void OnInitialized()
     {
@@ -54,8 +74,21 @@
             PaletteDark = _darkPalette,
             LayoutProperties = new LayoutProperties()
         };
+        Link.IsEditingChanged += async (e) => await HandleIsEditingChanged(e);
+        userService.OnIsLoggenInChanged += HandleIsLoggenInChanged;
     }
 
+    private async Task HandleIsEditingChanged(bool isEditing)
+    {
+        _isEditing = isEditing;
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private void HandleIsLoggenInChanged(object? sender, EventArgs e)
+    {
+        _isLoggedIn = userService.IsLoggenIn;
+        StateHasChanged();
+    }
 
     private void DrawerToggle()
     {
@@ -69,32 +102,84 @@
 
     private void DownloadCustomerList()
     {
-        index.DownloadCustomerList();
+        Link.TriggerDownload();
     }
 
     private async Task OpenFileDialog()
     {
-        await JS.InvokeVoidAsync("document.querySelector('input[type=file]').click()");
+        Link.TriggerBusy(true);
+        try
+        {
+            await JS.InvokeVoidAsync("triggerFileInputClick");
+        }
+        catch(Exception ex)
+        {
+            Link.TriggerError(ex.Message);
+            Console.WriteLine($"File dialog error {ex.Message}");
+        }
+        finally
+        {
+            Link.TriggerBusy(false);
+        }
     }
 
-    private async Task OnFileSelected(ChangeEventArgs e)
+    private void ToggleAccountPopup() => isAccountPopupOpen = !isAccountPopupOpen;
+
+    private async Task OnFileSelected(InputFileChangeEventArgs e)
     {
-        var file = e.Value as IBrowserFile;
+        Link.TriggerBusy(true);
+        var file = e.File;
         if (file != null)
         {
-            using (var stream = file.OpenReadStream())
-            using (var reader = new StreamReader(stream))
+            try
             {
-                var csv = new CsvReader(reader, new CsvConfiguration(CultureInfo.InvariantCulture));
+                using (var stream = file.OpenReadStream())
+                using (var memoryStream = new MemoryStream())
+                {
+                    await stream.CopyToAsync(memoryStream);
+                    memoryStream.Position = 0;
 
-                var records = csv.GetRecords<Customer>().ToList();
+                    using (var reader = new StreamReader(memoryStream))
+                    {
+                        var config = new CsvConfiguration(CultureInfo.InvariantCulture)
+                        {
+                            HeaderValidated = null,
+                            MissingFieldFound = null
+                        };
 
-                await service.SaveChangesAsync(customers: records, customersToDelete: null);
-
-                await JS.InvokeVoidAsync("reloadPage");
-
+                        using (var csv = new CsvReader(reader, config))
+                        {
+                            var records = await csv.GetRecordsAsync<Customer>().ToListAsync();
+                            if (records.Any(c => !c.IsValid))
+                                throw new Exception("Not all customers are valid in csv");
+                            foreach(var r in records)
+                            {
+                                r.Id = 0;
+                            }
+                            await service.SaveChangesAsync(customers: records, customersToDelete: null);
+                            await Task.Delay(200);
+                            NavigationManager.NavigateTo("/", forceLoad: true);
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Link.TriggerError($"Error processing CSV file: {ex.Message}");
+                Console.WriteLine($"Error processing CSV file: {ex.Message}");
+            }
+            finally
+            {
+                Link.TriggerBusy(false);
             }
         }
+    }
+
+    private void ToLoginPage()
+    {
+        userService.IsLoggenIn = false;
+        ToggleAccountPopup();
+        NavigationManager.NavigateTo("/login");
     }
 
     private readonly PaletteLight _lightPalette = new()
@@ -155,10 +240,26 @@
         false => Icons.Material.Outlined.Upload,
 
     };
+
+    public string AccountButtonIcon => _isDarkMode switch
+    {
+        true => Icons.Material.Rounded.AccountCircle,
+        false => Icons.Material.Outlined.AccountCircle,
+    };
 }
 
 <script>
     function reloadPage() {
         location.reload();
+    }
+</script>
+<script>
+    function triggerFileInputClick() {
+        const fileInput = document.querySelector('input[type=file]');
+        if (fileInput) {
+            fileInput.click();
+        } else {
+            console.error("File input element not found.");
+        }
     }
 </script>

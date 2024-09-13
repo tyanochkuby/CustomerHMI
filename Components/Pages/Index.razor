@@ -7,14 +7,15 @@
 @using CustomersTable.Services
 @using System.Reflection
 @using System.Text
-@using Microsoft.AspNetCore.SignalR.Client
 @inject IDialogService DialogService
 @inject ICustomerService service
 @inject ICustomerManagementService customerManagementService
 @inject ICustomerDialogService customerDialogService
 @inject NavigationManager NavigationManager
 @inject IJSRuntime JS
+@inject IUserService userService
 @inject ISnackbar Snackbar
+@inject IComponentCommunicationService Link
 
 <PageTitle>Customers</PageTitle>
 
@@ -90,7 +91,7 @@
 
     @code {
     [Parameter] public bool _isDarkMode { get; set; }
-    private bool busy;
+    public bool busy;
     private bool isFormValid = true;
     private bool wasChanged = false;
     public bool isEditing { get; private set; }
@@ -98,7 +99,6 @@
     private HashSet<Customer> customersToUpdate = new();
     private HashSet<Customer> selectedCustomers = new();
     private HashSet<Customer> customersToDelete = new();
-    private HubConnection hubConnection;
     string searchString = string.Empty;
     public string TelephoneIcon => _isDarkMode switch
     {
@@ -108,33 +108,19 @@
 
     protected override async Task OnInitializedAsync()
     {
-        // hubConnection = new HubConnectionBuilder()
-        // .WithUrl("https://localhost:5001/customerHub")
-        // .Build();
-
-        // hubConnection.On("ReceiveCustomerUpdate", async () =>
-        // {
-        //     if(isEditing)
-        //     {
-        //         Snackbar.Add("Someone has edited the table", Severity.Normal, config =>
-        //         {
-        //             config.Action = "Refresh";
-        //             config.ActionColor = Color.Primary;
-        //             config.Onclick = async snackbar => await RefreshAsync();
-        //         });
-        //     }
-        //     else
-        //     {
-        //         await RefreshAsync();
-        //         Snackbar.Add("List was updated", Severity.Normal, config => { config.ShowCloseIcon = true; });
-        //     }
-        // });
-
-        // await hubConnection.StartAsync();
+        var isAuthenticated = await userService.IsAuthenticatedAsync();
+        if (!isAuthenticated)
+        {
+            NavigationManager.NavigateTo("/login");
+        }
+        Link.BusyChanged += async (e) => await OnBusyChanged(e);
+        Link.ErrorOccured += OnError;
+        Link.DownloadNeeded += DownloadCustomerList;
+        Link.RefreshNeeded += () => InvokeAsync(RefreshAsync);
         await RefreshAsync();
     }
 
-    private async Task RefreshAsync()
+    public async Task RefreshAsync()
     {
         busy = true;
         selectedCustomers.Clear();
@@ -157,13 +143,14 @@
         {
             isEditing = true;
         }
+        Link.TriggerEditing(isEditing);
     }
 
     private async Task CancelChanges()
     {
         customersToDelete.Clear();
         isEditing = false;
-
+        Link.TriggerEditing(isEditing);
         await RefreshAsync();
     }
 
@@ -209,14 +196,24 @@
     public void DownloadCustomerList()
     {
         var csvBuilder = new StringBuilder();
-        csvBuilder.AppendLine("First Name, Last Name, Street Name, House Number, Apartment Number, Postal Code, Town, Phone Number, Date of Birth, Age");
+        csvBuilder.AppendLine("FirstName,LastName,StreetName,HouseNumber,AppartmentNumber,PostalCode,Town,PhoneNumber,BirthDate");
 
         foreach (var customer in customerList)
         {
-            csvBuilder.AppendLine($"{customer.FirstName}, {customer.LastName}, {customer.StreetName}, {customer.HouseNumber}, {customer.AppartmentNumber}, {customer.PostalCode}, {customer.Town}, {customer.PhoneNumber}, {customer.BirthDate.ToShortDateString()}, {customer.Age}");
+            csvBuilder.AppendLine($"{customer.FirstName},{customer.LastName},{customer.StreetName},{customer.HouseNumber},{customer.AppartmentNumber},{customer.PostalCode},{customer.Town},{customer.PhoneNumber},{customer.BirthDate.ToShortDateString()}");
         }
         var csvData = csvBuilder.ToString();
         JS.InvokeVoidAsync("downloadFileFromStream", "customers.csv", csvData);
+    }
+
+    private async Task OnBusyChanged(bool b)
+    {
+        busy = b;
+        await InvokeAsync(StateHasChanged);
+    }
+    public void OnError(string message)
+    {
+        Snackbar.Add(message, Severity.Error);
     }
 }
 

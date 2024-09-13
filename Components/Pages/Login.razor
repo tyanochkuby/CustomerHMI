@@ -1,0 +1,73 @@
+﻿@page "/login"
+@using CustomersTable.Data.Interfaces
+@using System.ComponentModel.DataAnnotations
+@inject IUserService userService
+@inject NavigationManager NavigationManager
+
+<PageTitle>Login</PageTitle>
+
+
+<MudText Typo="Typo.h2" Align="Align.Center">Login</MudText>
+
+<MudContainer Class="mt-4" MaxWidth="MaxWidth.Small">
+    <MudForm Model="@this" @bind-IsValid="@isValid">
+        <MudTextField Label="Email" @bind-Value="Email" Variant="Variant.Outlined" InputType="InputType.Email" Required="true" />
+        <MudTextField Label="Password" @bind-Value="Password" Variant="Variant.Outlined" InputType="PasswordInput" AdornmentIcon="@PasswordInputIcon" OnAdornmentClick="TogglePasswordVisibility" AdornmentAriaLabel="Show Password" Required="true" />
+        <MudGrid Spacing="3" Class="mt-1 mb-2" Justify="Justify.FlexEnd">
+            <MudItem Class=" mr-2">
+                <MudButton Disabled="@(!isValid)" DropShadow="true" Variant="Variant.Filled" Color="Color.Primary" OnClick="LoginAsync">Login</MudButton>
+            </MudItem>
+        </MudGrid>
+        
+        <MudText Typo="Typo.body2" Color="Color.Error">@ErrorMessage</MudText>
+            
+    </MudForm>
+    <MudGrid Spacing="3" Class="mt-1" Justify="Justify.Center">
+        <MudItem>
+            <MudText>Don't have an account? <MudLink OnClick="GoToRegisterPage">Register</MudLink> </MudText>
+        </MudItem>
+    </MudGrid>
+
+</MudContainer>
+
+@code {
+    private string Email;
+    private string Password;
+    private string ErrorMessage;
+    private bool isValid;
+
+    private async Task LoginAsync()
+    {
+        var result = await userService.LoginAsync(Email, Password);
+        if (!result)
+        {
+            ErrorMessage = "Invalid email or password.";
+        }
+        StateHasChanged();
+    }
+
+    bool isShow;
+    InputType PasswordInput = InputType.Password;
+    string PasswordInputIcon = Icons.Material.Filled.VisibilityOff;
+
+    private void GoToRegisterPage()
+    {
+        NavigationManager.NavigateTo("/register");
+    }
+
+    void TogglePasswordVisibility()
+    {
+        @if (isShow)
+        {
+            isShow = false;
+            PasswordInputIcon = Icons.Material.Filled.VisibilityOff;
+            PasswordInput = InputType.Password;
+        }
+        else
+        {
+            isShow = true;
+            PasswordInputIcon = Icons.Material.Filled.Visibility;
+            PasswordInput = InputType.Text;
+        }
+    }
+}

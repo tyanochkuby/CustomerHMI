@@ -17,9 +17,12 @@ namespace CustomersTable.Data.Attributes
             {
                 return new ValidationResult("This attribute can only be applied to string properties.");
             }
-
+            if (stringValue != null && stringValue.Length > 50)
+            {
+                return new ValidationResult("The input is too long");
+            }
             // Regex pattern to match Polish characters
-            var polishPattern = @"^[a-zA-ZąćęłńóśźżĄĆĘŁŃÓŚŹŻ\ s]+$";
+            var polishPattern = @"^[a-zA-ZąćęłńóśźżĄĆĘŁŃÓŚŹŻ\s]+$";
             if (Regex.IsMatch(stringValue, polishPattern))
             {
                 return ValidationResult.Success;

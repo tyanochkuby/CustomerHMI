@@ -10,21 +10,33 @@ namespace CustomersTable.Services
     public class CustomerService : ICustomerService
     {
         private readonly List<Customer> _customers = new();
+        private readonly IUserService _userService;
         private readonly HttpClient _httpClient;
-        public CustomerService(HttpClient httpClient)
+        public CustomerService(HttpClient httpClient, IUserService userService)
         {
+            _userService = userService;
             _httpClient = httpClient;
         }
 
         public async Task DeleteCustomersAsync(IEnumerable<int> customerIds)
         {
-            var ids = string.Join(",", customerIds);
-            var response = await _httpClient.DeleteAsync($"api/customers/delete?customerIds={ids}");
+            var queryString = string.Join("&", customerIds.Select(id => $"customerIds={id}"));
+            var response = await _httpClient.DeleteAsync($"api/customer/delete?{queryString}");
+            if (response.IsSuccessStatusCode)
+            {
+                // Handle success
+            }
+            else
+            {
+                // Handle failure
+                var errorMessage = await response.Content.ReadAsStringAsync();
+                Console.WriteLine($"Update failed: {errorMessage}");
+            }
         }
 
         public async Task<List<Customer>> GetCustomersAsync()
         {
-            var customers = await _httpClient.GetFromJsonAsync<List<Customer>>("api/customers/get");
+            var customers = await _httpClient.GetFromJsonAsync<List<Customer>>("api/customer/get");
             foreach(var customer in customers)
             {
                 customer.Age = Customer.CalculateAge(customer.BirthDate);
@@ -34,7 +46,22 @@ namespace CustomersTable.Services
 
         public async Task UpdateCustomersAsync(List<Customer> customers)
         {
-            var response = await _httpClient.PutAsJsonAsync("api/customers/update", customers);
+            var userId = await _userService.GetLoggedInUserIdAsync();
+            foreach (var customer in customers)
+            {
+                customer.UserId = userId;
+            }
+            var response = await _httpClient.PutAsJsonAsync("api/customer/update", customers);
+            if (response.IsSuccessStatusCode)
+            {
+                // Handle success
+            }
+            else
+            {
+                // Handle failure
+                var errorMessage = await response.Content.ReadAsStringAsync();
+                Console.WriteLine($"Update failed: {errorMessage}");
+            }
         }
     }
 }

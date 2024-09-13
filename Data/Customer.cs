@@ -39,6 +39,8 @@ namespace CustomersTable.Data
 
         public required DateTime BirthDate { get; set; }
 
+        public string UserId { get; set; }
+
         [JsonIgnore]
         public int Age { get; set; }
 

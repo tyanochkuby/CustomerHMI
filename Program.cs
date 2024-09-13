@@ -1,8 +1,10 @@
 using CustomersTable.Components;
 using CustomersTable.Data.Interfaces;
 using CustomersTable.Services;
+using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.EntityFrameworkCore;
 using MudBlazor.Services;
+using System.Net;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -12,10 +14,20 @@ builder.Services.AddMudServices();
 // Add services to the container.
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
-builder.Services.AddScoped(sp => new HttpClient { BaseAddress = new Uri("https://localhost:5001/") });
+builder.Services.AddSingleton(sp => new HttpClient(new HttpClientHandler
+{
+    UseCookies = true
+})
+{
+    BaseAddress = new Uri("https://localhost:5001/")
+});
+
 builder.Services.AddScoped<ICustomerService, CustomerService>();
 builder.Services.AddScoped<ICustomerManagementService, CustomerManagementService>();
 builder.Services.AddScoped<ICustomerDialogService, CustomerDialogService>();
+builder.Services.AddScoped<IUserService, UserService>();
+builder.Services.AddSingleton<IComponentCommunicationService, ComponentCommunicationService>();
+
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
