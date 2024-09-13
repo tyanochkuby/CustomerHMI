@@ -8,7 +8,7 @@
 <MudDialog>
     <DialogContent>
 
-        <MudForm @ref="form" @bind-IsValid="@isValid" Class="mx-5">
+        <MudForm @onkeydown="HandleFormKeyDown" @ref="form" @bind-IsValid="@isValid" Class="mx-5">
 
             <MudTextField @bind-Value="newCustomer.FirstName" T="string" Validation="@(new PolishAlphabetAttribute())" Label="First Name" Required="true" />
             <MudTextField @bind-Value="newCustomer.LastName" T="string" Validation="@(new PolishAlphabetAttribute())" Label="Last Name" Required="true" />
@@ -58,6 +58,14 @@
             BirthDate = DateTime.Now,
             Age=0
         };
+
+    private void HandleFormKeyDown(KeyboardEventArgs e)
+    {
+        if(e.Key == "Enter")
+        {
+            SubmitForm();
+        }
+    }
 
     private void SubmitForm()
     {

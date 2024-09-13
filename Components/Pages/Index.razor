@@ -158,6 +158,7 @@
     {
         wasChanged = true;
         customersToDelete.UnionWith(selectedCustomers);
+        customersToUpdate.ExceptWith(selectedCustomers);
         customerList = customerList.Where(c => !selectedCustomers.Contains(c)).ToList();
     }
 
