@@ -10,6 +10,7 @@
 @inject IUserService userService
 @inject ISnackbar Snackbar
 @inject IComponentCommunicationService Link
+@inject ICsvService CsvService
 
 <MudThemeProvider Theme="@_theme" IsDarkMode="_isDarkMode" />
 <MudPopoverProvider />
@@ -113,9 +114,12 @@
     private async Task OpenFileDialog()
     {
         Link.TriggerBusy(true);
+
         try
         {
-            await JS.InvokeVoidAsync("triggerFileInputClick");
+            var task = JS.InvokeVoidAsync("triggerFileInputClick");
+            Snackbar.Add("Processing file, please wait...", Severity.Info);
+            await task;
         }
         catch(Exception ex)
         {
@@ -133,51 +137,21 @@
     private async Task OnFileSelected(InputFileChangeEventArgs e)
     {
         Link.TriggerBusy(true);
-        var file = e.File;
-        if (file != null)
+        try
         {
-            try
-            {
-                Snackbar.Add("Processing file, please wait...", Severity.Info);
-                using (var stream = file.OpenReadStream())
-                using (var memoryStream = new MemoryStream())
-                {
-                    await stream.CopyToAsync(memoryStream);
-                    memoryStream.Position = 0;
-
-                    using (var reader = new StreamReader(memoryStream))
-                    {
-                        var config = new CsvConfiguration(CultureInfo.InvariantCulture)
-                        {
-                            HeaderValidated = null,
-                            MissingFieldFound = null
-                        };
-
-                        using (var csv = new CsvReader(reader, config))
-                        {
-                            var records = await csv.GetRecordsAsync<Customer>().ToListAsync();
-                            if (records.Any(c => !c.IsValid))
-                                throw new Exception("Not all customers are valid in csv");
-                            foreach(var r in records)
-                            {
-                                r.Id = 0;
-                            }
-                            await service.SaveChangesAsync(customers: records, customersToDelete: null);
-                            await Task.Delay(200);
-                            NavigationManager.NavigateTo("/", forceLoad: true);
-                        }
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                Link.TriggerError($"Error processing CSV file: {ex.Message}");
-                Console.WriteLine($"Error processing CSV file: {ex.Message}");
-            }
-            finally
-            {
-                Link.TriggerBusy(false);
-            }
+            var records = await CsvService.GetCustomersFromCsv(e);
+            await service.SaveChangesAsync(customers: records, customersToDelete: null);
+            //await Task.Delay(500);
+            Link.TriggerReresh();
+                    
+        }
+        catch (Exception ex)
+        {
+            Link.TriggerError($"Error processing CSV file: {ex.Message}");
+        }
+        finally
+        {
+            Link.TriggerBusy(false);
         }
     }
 

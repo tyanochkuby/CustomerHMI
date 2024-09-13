@@ -15,10 +15,28 @@
 @inject IJSRuntime JS
 @inject IUserService userService
 @inject ISnackbar Snackbar
+@inject ICsvService CsvService
 @inject IComponentCommunicationService Link
 
 <PageTitle>Customers</PageTitle>
-
+@if(showStartScreen)
+{
+    <MudGrid Class="mt-5" Justify="Justify.Center" >
+        <MudStack AlignItems="AlignItems.Center" Spacing="2" Justify="Justify.Center">
+            <MudItem xs="12">
+                <MudText>Seems like your table is empty</MudText>
+            </MudItem>
+            <MudItem xs="12">
+                <MudText>Add your first contact</MudText>
+            </MudItem>
+            <MudItem xs="12" Class="mt-3" >
+                <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="OpenCreateCustomerDialog">Add</MudButton>
+            </MudItem>
+        </MudStack>
+    </MudGrid>
+}
+else
+{
 <MudPaper>
     <MudTable Loading="busy" MultiSelection="isEditing" SelectOnRowClick="false" @bind-SelectedItems="selectedCustomers" LoadingProgressColor="Color.Info" Breakpoint="Breakpoint.Sm" Hover="true" T="Customer" Items="customerList" Filter="new Func<Customer,bool>(FilterFunc)">
         <ToolBarContent>
@@ -88,12 +106,14 @@
         <MudButton Class="mx-auto" Style="width: 100%" Color="Color.Primary" @onclick="OpenCreateCustomerDialog">New</MudButton>
     }
 </MudPaper>
+}
 
-    @code {
+@code {
     [Parameter] public bool _isDarkMode { get; set; }
     public bool busy;
     private bool isFormValid = true;
     private bool wasChanged = false;
+    private bool showStartScreen = false;
     public bool isEditing { get; private set; }
     private List<Customer> customerList = new();
     private HashSet<Customer> customersToUpdate = new();
@@ -115,7 +135,7 @@
         }
         Link.BusyChanged += async (e) => await OnBusyChanged(e);
         Link.ErrorOccured += OnError;
-        Link.DownloadNeeded += DownloadCustomerList;
+        Link.DownloadNeeded += () => InvokeAsync(DownloadCustomerList);
         Link.RefreshNeeded += () => InvokeAsync(RefreshAsync);
         await RefreshAsync();
     }
@@ -127,8 +147,10 @@
         customersToUpdate.Clear();
         customersToDelete.Clear();
         customerList = (await customerManagementService.GetCustomersAsync()).ToList();
+        showStartScreen = customerList.Count == 0;
         wasChanged = false;
         busy = false;
+        await InvokeAsync(StateHasChanged);
     }
 
     private async Task ToggleEditMode()
@@ -169,6 +191,7 @@
         {
             customerList.Add(newCustomer);
             customersToUpdate.Add(newCustomer);
+            showStartScreen = false;
             wasChanged = true;
         }
     }
@@ -194,17 +217,10 @@
         isFormValid = customerList.All(c => c.IsValid);
     }
 
-    public void DownloadCustomerList()
+    public async Task DownloadCustomerList()
     {
-        var csvBuilder = new StringBuilder();
-        csvBuilder.AppendLine("FirstName,LastName,StreetName,HouseNumber,AppartmentNumber,PostalCode,Town,PhoneNumber,BirthDate");
-
-        foreach (var customer in customerList)
-        {
-            csvBuilder.AppendLine($"{customer.FirstName},{customer.LastName},{customer.StreetName},{customer.HouseNumber},{customer.AppartmentNumber},{customer.PostalCode},{customer.Town},{customer.PhoneNumber},{customer.BirthDate.ToShortDateString()}");
-        }
-        var csvData = csvBuilder.ToString();
-        JS.InvokeVoidAsync("downloadFileFromStream", "customers.csv", csvData);
+        var csvData = await CsvService.GetCsvFromCustomerList(customerList);
+        await JS.InvokeVoidAsync("downloadFileFromStream", "customers.csv", csvData);
     }
 
     private async Task OnBusyChanged(bool b)

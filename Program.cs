@@ -29,6 +29,7 @@ builder.Services.AddScoped<ICustomerService, CustomerService>();
 builder.Services.AddScoped<ICustomerManagementService, CustomerManagementService>();
 builder.Services.AddScoped<ICustomerDialogService, CustomerDialogService>();
 builder.Services.AddScoped<IUserService, UserService>();
+builder.Services.AddSingleton<ICsvService, CsvService>();
 builder.Services.AddSingleton<IComponentCommunicationService, ComponentCommunicationService>();
 
 var app = builder.Build();
