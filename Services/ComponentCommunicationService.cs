@@ -9,6 +9,7 @@ namespace CustomersTable.Services
         public event Action<bool>? IsEditingChanged;
         public event Action? DownloadNeeded;
         public event Action? RefreshNeeded;
+        public event Action<bool>? LightModeChanged;
 
         public void TriggerError(string message) => ErrorOccured?.Invoke(message);
         public void TriggerBusy(bool busy) => BusyChanged?.Invoke(busy);
@@ -17,5 +18,6 @@ namespace CustomersTable.Services
         public void TriggerDownload() => DownloadNeeded?.Invoke();
 
         public void TriggerReresh() => RefreshNeeded?.Invoke();
+        public void TriggerLightMode(bool isDarkMode) => LightModeChanged?.Invoke(isDarkMode);
     }
 }

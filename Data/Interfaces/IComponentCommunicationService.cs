@@ -7,11 +7,13 @@
         public event Action<bool>? IsEditingChanged;
         public event Action? DownloadNeeded;
         public event Action? RefreshNeeded;
+        public event Action<bool>? LightModeChanged;
         public void TriggerError(string message);
         public void TriggerBusy(bool busy);
         public void TriggerEditing(bool isEditing);
         public void TriggerDownload();
         public void TriggerReresh();
+        public void TriggerLightMode(bool isDarkMode);
 
     }
 }

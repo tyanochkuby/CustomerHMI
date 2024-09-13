@@ -103,6 +103,7 @@
     private async Task DarkModeToggle()
     {
         _isDarkMode = !_isDarkMode;
+        Link.TriggerLightMode(_isDarkMode);
         await userService.SetLightModeAsync(_isDarkMode);
     }
 
