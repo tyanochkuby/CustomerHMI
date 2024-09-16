@@ -12,25 +12,22 @@ namespace CustomersTable.Services
         private readonly List<Customer> _customers = new();
         private readonly IUserService _userService;
         private readonly HttpClient _httpClient;
-        public CustomerService(HttpClient httpClient, IUserService userService)
+        private readonly IComponentCommunicationService _link;
+        public CustomerService(HttpClient httpClient, IUserService userService, IComponentCommunicationService link)
         {
             _userService = userService;
             _httpClient = httpClient;
+            _link = link;
         }
 
         public async Task DeleteCustomersAsync(IEnumerable<int> customerIds)
         {
             var queryString = string.Join("&", customerIds.Select(id => $"customerIds={id}"));
             var response = await _httpClient.DeleteAsync($"api/customer/delete?{queryString}");
-            if (response.IsSuccessStatusCode)
+            if (!response.IsSuccessStatusCode)
             {
-                // Handle success
-            }
-            else
-            {
-                // Handle failure
                 var errorMessage = await response.Content.ReadAsStringAsync();
-                Console.WriteLine($"Update failed: {errorMessage}");
+                _link.TriggerError(errorMessage);
             }
         }
 
@@ -52,15 +49,10 @@ namespace CustomersTable.Services
                 customer.UserId = userId;
             }
             var response = await _httpClient.PutAsJsonAsync("api/customer/update", customers);
-            if (response.IsSuccessStatusCode)
+            if (!response.IsSuccessStatusCode)
             {
-                // Handle success
-            }
-            else
-            {
-                // Handle failure
                 var errorMessage = await response.Content.ReadAsStringAsync();
-                Console.WriteLine($"Update failed: {errorMessage}");
+                _link.TriggerError(errorMessage);
             }
         }
     }
